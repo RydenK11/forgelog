@@ -74,6 +74,8 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 .schk{background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--rsm);}
 .schk.on{background:var(--green-bg);border-color:var(--green-border);color:var(--green);}
 .stbtn{background:var(--bg3);border:.5px solid var(--border);border-radius:var(--rsm);color:var(--text3);}
+.snwrap{padding:0 0 4px 28px;}
+.snon{color:var(--acc)!important;border-color:var(--acc-border)!important;}
 .serow{display:flex;align-items:center;gap:6px;margin-bottom:6px;}
 .serow input{flex:1;text-align:center;padding:8px 4px;}
 .serow .cb{background:var(--acc);color:#fff;border-radius:var(--rsm);padding:8px 10px;font-size:13px;flex-shrink:0;}
@@ -115,7 +117,13 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <body>
 <div id="app">
   <div id="hdr">
-    <div class="logo"><span>FORGE</span>LOG</div>
+    <div style="display:flex;align-items:center;gap:7px">
+      <svg width="14" height="22" viewBox="0 0 14 22" fill="none" xmlns="http://www.w3.org/2000/svg" style="flex-shrink:0">
+        <path d="M7 0C5 4 1 6 1 11C1 16.523 3.686 21 7 21C10.314 21 13 16.523 13 11C13 8 11 6 10 3.5C10 6 9 7.5 8 8.5C9 6 9 3 7 0Z" fill="#FF5C00"/>
+        <path d="M7 12C6 14 5.5 15.5 5.5 17C5.5 18.657 6.172 20 7 20C7.828 20 8.5 18.657 8.5 17C8.5 15.5 8 14 7 12Z" fill="#FF8C42" opacity="0.7"/>
+      </svg>
+      <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:3px;line-height:1"><span style="color:#FF5C00">FORGE</span><span style="color:#f0f0f0">LOG</span></div>
+    </div>
     <div id="tbadge" style="font-family:var(--mono);font-size:10px;color:var(--text3)"></div>
   </div>
   <div id="nav">
@@ -164,7 +172,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
           <div><div class="lbl">Today's Weight</div><div class="wb" id="wtd">—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span></div></div>
           <div style="text-align:right"><div class="lbl">7-Day Avg</div><div id="wavg" style="font-family:var(--mono);font-size:22px;color:var(--acc)">—</div><div style="font-size:10px;color:var(--text3)">lbs</div></div>
         </div>
-        <div class="row"><input class="inp" id="winp" type="number" step="0.1" placeholder="Enter weight (lbs)" style="flex:1"/><button class="bacc" onclick="logWt()">Log</button></div>
+        <div class="row"><input class="inp" id="winp" type="number" inputmode="numeric" pattern="[0-9]*" step="0.1" placeholder="Enter weight (lbs)" style="flex:1"/><button class="bacc" onclick="logWt()">Log</button></div>
       </div>
       <div class="card"><div class="lbl" style="margin-bottom:10px">14-Day Trend</div><div class="cwrap" id="wchart"></div><div style="display:flex;justify-content:space-between" id="wlabels"></div></div>
       <div class="card">
@@ -263,7 +271,7 @@ const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DK=[1,3,5];const DL={1:'Monday',3:'Wednesday',5:'Friday'};
 
-let cdate=tstr(),tiv=null,tsec=0,ttot=0,eset=null,apd=1;
+let cdate=tstr(),tiv=null,tsec=0,ttot=0,eset=null,apd=1,openSN=new Set();
 
 function tstr(){return new Date().toISOString().split('T')[0];}
 function pd(s){return new Date(s+'T12:00:00');}
@@ -338,9 +346,9 @@ function rTrain(){
 function rSets(sets,ei,rest){
   return sets.map((s,si)=>{
     const isE=eset&&eset.ei===ei&&eset.si===si;
-    if(isE)return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" value="'+(s.w||'')+'" placeholder="lbs" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" value="'+(s.r||'')+'" placeholder="reps" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';
-    const hd=s.done||(s.w&&s.r);
-    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.w?s.w+' lbs':'— lbs')+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.r?s.r+' reps':'— reps')+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'</div>';
+    if(isE)return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.w||'')+'" placeholder="lbs" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.r||'')+'" placeholder="reps" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';
+    const hd=s.done||(s.w&&s.r),skey=ei+'-'+si,shown=!!(s.note)||openSN.has(skey),sntxt=s.note?(s.note+'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
+    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.w?s.w+' lbs':'— lbs')+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.r?s.r+' reps':'— reps')+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
   }).join('');
 }
 
@@ -350,13 +358,15 @@ function confEdit(ei,si){const wo=getWO(cdate);if(!wo)return;const w=document.ge
 function togDone(ei,si){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets[si].done=!wo.exs[ei].sets[si].done;setWO(cdate,wo);rTrain();}
 function addSet(ei){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets.push({w:'',r:'',done:false});setWO(cdate,wo);rTrain();}
 function updExNote(ei,val){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].note=val;setWO(cdate,wo);}
+function togSetNote(ei,si){const key=ei+'-'+si,el=document.getElementById('sn-'+ei+'-'+si);if(!el)return;if(openSN.has(key)){openSN.delete(key);el.style.display='none';}else{openSN.add(key);el.style.display='block';el.querySelector('input')?.focus();}}
+function saveSetNote(ei,si,val){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets[si].note=val;setWO(cdate,wo);}
 
 /* EAT */
 function rEat(){
   const nu=getNU(cdate);updCal(nu);
   document.getElementById('mgrid').innerHTML=MDS.map(m=>{const v=nu[m.k]||0,p=clamp(Math.round(v/m.t*100),0,100),ov=v>m.t;return '<div class="mcard"><div class="lbl">'+m.l+'</div><div class="mv'+(ov?' ov':'')+'">'+v+'<span style="font-size:11px;color:var(--text3);margin-left:2px">'+m.u+'</span></div><div class="bw"><div class="bf'+(ov?' ov':'')+'" style="width:'+p+'%;background:'+(ov?'var(--red)':m.c)+'"></div></div><div class="mp">'+p+'% of '+m.t+m.u+'</div></div>';}).join('');
   const fl=[{k:'cal',l:'Calories',t:2100,u:'kcal',s:'1'},{k:'prot',l:'Protein',t:200,u:'g',s:'1'},{k:'fat',l:'Fat',t:65,u:'g',s:'1'},{k:'carbs',l:'Carbs',t:220,u:'g',s:'1'},{k:'fiber',l:'Fiber',t:30,u:'g',s:'1'},{k:'steps',l:'Steps',t:8000,u:'',s:'100'}];
-  document.getElementById('nuinp').innerHTML='<div class="lbl" style="margin-bottom:10px">Log Your Intake</div>'+fl.map(f=>'<div style="margin-bottom:10px"><div class="lbl">'+f.l+' <span style="color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0;font-size:10px">/ '+f.t+f.u+'</span></div><input class="inp" type="number" step="'+f.s+'" value="'+(nu[f.k]||'')+'" placeholder="0" oninput="saveNF(\''+f.k+'\',this.value)"/></div>').join('');
+  document.getElementById('nuinp').innerHTML='<div class="lbl" style="margin-bottom:10px">Log Your Intake</div>'+fl.map(f=>'<div style="margin-bottom:10px"><div class="lbl">'+f.l+' <span style="color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0;font-size:10px">/ '+f.t+f.u+'</span></div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" step="'+f.s+'" value="'+(nu[f.k]||'')+'" placeholder="0" oninput="saveNF(\''+f.k+'\',this.value)"/></div>').join('');
 }
 function updCal(nu){const e=nu.cal||0,r=TARGETS.cal-e,p=clamp(Math.round(e/TARGETS.cal*100),0,100);const re=document.getElementById('crem');re.textContent=r;re.className='cr '+(r<0?'ov':r<300?'wn':'gd');document.getElementById('ceat').textContent=e;const b=document.getElementById('cbar');b.style.width=p+'%';b.className='bf'+(e>TARGETS.cal?' ov':'');}
 function saveNF(k,v){const nu=getNU(cdate);nu[k]=parseFloat(v)||0;setNU(cdate,nu);updCal(nu);}
@@ -373,7 +383,7 @@ function rMeasure(){
   const md=document.getElementById('mdate');if(!md.value)md.value=tstr();loadMF(md.value);md.onchange=()=>loadMF(md.value);
   rMH();
 }
-function loadMF(date){const d=getMS(date)||{};document.getElementById('mfields').innerHTML=MF.map(f=>'<div class="mf"><div class="ml">'+f.l+'</div><input class="inp" type="number" step="0.1" value="'+(d[f.k]||'')+'" placeholder="—" style="flex:1" id="mf-'+f.k+'"/><div style="font-size:11px;color:var(--text3)">"</div></div>').join('');const b=document.getElementById('msvbtn');b.className='svbtn us';b.textContent='Save Measurements';}
+function loadMF(date){const d=getMS(date)||{};document.getElementById('mfields').innerHTML=MF.map(f=>'<div class="mf"><div class="ml">'+f.l+'</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" step="0.1" value="'+(d[f.k]||'')+'" placeholder="—" style="flex:1" id="mf-'+f.k+'"/><div style="font-size:11px;color:var(--text3)">"</div></div>').join('');const b=document.getElementById('msvbtn');b.className='svbtn us';b.textContent='Save Measurements';}
 function rMH(){const all=allMS(),hc=document.getElementById('mhcard');if(!all.length){hc.style.display='none';return;}hc.style.display='block';document.getElementById('mhist').innerHTML=all.slice(0,5).map(({date,data})=>'<div class="hr" onclick="loadHE(\''+date+'\')"><div class="hrd">'+fmt(date)+'</div><div class="hrv">'+MF.filter(f=>data[f.k]).map(f=>'<div style="font-size:11px;color:var(--text2)">'+f.l+': <strong style="color:var(--text)">'+data[f.k]+'"</strong></div>').join('')+'</div></div>').join('');}
 function loadHE(d){document.getElementById('mdate').value=d;loadMF(d);}
 function logWt(){const v=parseFloat(document.getElementById('winp').value);if(isNaN(v))return;setWT(tstr(),v);rMeasure();toast('Weight logged');}
@@ -388,7 +398,7 @@ function setPD(k){apd=k;rProg();}
 function rPE(){
   const prog=getProg(),day=prog[apd];
   if(!day){document.getElementById('peditor').innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--text3)">No program for this day.</div>';return;}
-  let h=day.exercises.map((ex,ei)=>'<div class="pecard" id="pe-'+ei+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--text3)">Exercise '+(ei+1)+'</span><button class="debtn" onclick="delEx('+ei+')">Remove</button></div><div style="margin-bottom:8px"><div class="lbl">Name</div><input class="inp" value="'+ex.name.replace(/"/g,'&quot;')+'" placeholder="Exercise name" oninput="updEX('+ei+',\'name\',this.value)"/></div><div class="fr"><div class="fg"><div class="lbl">Sets</div><input class="inp" type="number" value="'+ex.sets+'" placeholder="3" oninput="updEX('+ei+',\'sets\',parseInt(this.value)||1)" style="text-align:center"/></div><div class="fg"><div class="lbl">Reps</div><input class="inp" value="'+ex.reps.replace(/"/g,'&quot;')+'" placeholder="8-12" oninput="updEX('+ei+',\'reps\',this.value)"/></div><div class="fg"><div class="lbl">Rest(s)</div><input class="inp" type="number" value="'+ex.rest+'" placeholder="90" oninput="updEX('+ei+',\'rest\',parseInt(this.value)||0)" style="text-align:center"/></div></div><div><div class="lbl">Notes / Cues</div><textarea class="inp" rows="2" placeholder="Form cues, pairing info..." oninput="updEX('+ei+',\'note\',this.value)">'+(ex.note||'')+'</textarea></div></div>').join('');
+  let h=day.exercises.map((ex,ei)=>'<div class="pecard" id="pe-'+ei+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--text3)">Exercise '+(ei+1)+'</span><button class="debtn" onclick="delEx('+ei+')">Remove</button></div><div style="margin-bottom:8px"><div class="lbl">Name</div><input class="inp" value="'+ex.name.replace(/"/g,'&quot;')+'" placeholder="Exercise name" oninput="updEX('+ei+',\'name\',this.value)"/></div><div class="fr"><div class="fg"><div class="lbl">Sets</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.sets+'" placeholder="3" oninput="updEX('+ei+',\'sets\',parseInt(this.value)||1)" style="text-align:center"/></div><div class="fg"><div class="lbl">Reps</div><input class="inp" value="'+ex.reps.replace(/"/g,'&quot;')+'" placeholder="8-12" oninput="updEX('+ei+',\'reps\',this.value)"/></div><div class="fg"><div class="lbl">Rest(s)</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.rest+'" placeholder="90" oninput="updEX('+ei+',\'rest\',parseInt(this.value)||0)" style="text-align:center"/></div></div><div><div class="lbl">Notes / Cues</div><textarea class="inp" rows="2" placeholder="Form cues, pairing info..." oninput="updEX('+ei+',\'note\',this.value)">'+(ex.note||'')+'</textarea></div></div>').join('');
   h+='<button class="aebtn" onclick="addEx()">+ Add Exercise</button>';
   document.getElementById('peditor').innerHTML=h;
 }
