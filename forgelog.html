@@ -329,7 +329,7 @@ function rTrain(){
   let h='<div class="card"><div class="lbl" style="margin-bottom:8px">Quick Rest Timer</div><div class="tq">'+[[60,'1m'],[90,'1:30'],[120,'2m'],[180,'3m']].map(([s,l])=>'<button data-s="'+s+'" onclick="startTimer('+s+')">'+l+'</button>').join('')+'</div></div>';
   wo.exs.forEach((ex,ei)=>{
     const pr=pg.exercises[ei]||{},ad=ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r));
-    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button></div>';
+    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="Notes, cues, how it felt..." oninput="updExNote('+ei+',this.value)">'+(ex.note?ex.note.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):'')+'</textarea></div></div>';
   });
   body.innerHTML=h;
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',tiv&&parseInt(b.dataset.s)===ttot));
@@ -349,6 +349,7 @@ function openEdit(ei,si){eset={ei,si};const wo=getWO(cdate),pg=getProg()[dow(cda
 function confEdit(ei,si){const wo=getWO(cdate);if(!wo)return;const w=document.getElementById('ew')?.value||'',r=document.getElementById('er')?.value||'';wo.exs[ei].sets[si]={...wo.exs[ei].sets[si],w,r,done:!!(w&&r)};setWO(cdate,wo);eset=null;rTrain();}
 function togDone(ei,si){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets[si].done=!wo.exs[ei].sets[si].done;setWO(cdate,wo);rTrain();}
 function addSet(ei){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets.push({w:'',r:'',done:false});setWO(cdate,wo);rTrain();}
+function updExNote(ei,val){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].note=val;setWO(cdate,wo);}
 
 /* EAT */
 function rEat(){
