@@ -7,13 +7,6 @@
 <title>Antonio's Client Tracker</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
-/* ============================================================
-   ANTONIO'S CLIENT TRACKER — STANDALONE FITNESS TRACKER
-   Sections you can find & edit via Cowork:
-   - TARGETS (calories, macros, steps)
-   - DEFAULT_PROGRAM (all exercises)
-   - MEAS_FIELDS (body measurement sites)
-   ============================================================ */
 :root{--acc:#3B82F6;--acc-dim:rgba(59,130,246,0.12);--acc-border:rgba(59,130,246,0.35);--bg:#0d0d0d;--bg2:#161616;--bg3:#1e1e1e;--border:rgba(255,255,255,0.07);--border2:rgba(255,255,255,0.12);--text:#f0f0f0;--text2:#a0a0a0;--text3:#555;--green:#22c55e;--green-bg:rgba(34,197,94,0.1);--green-border:rgba(34,197,94,0.3);--red:#ef4444;--yellow:#f59e0b;--r:10px;--rsm:6px;--font:'DM Sans',system-ui,sans-serif;--mono:'DM Mono',monospace;--display:'Bebas Neue',cursive;}
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
 html{-webkit-tap-highlight-color:transparent;}
@@ -23,8 +16,6 @@ input,textarea,select{font-family:var(--mono);outline:none;}
 input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
 #app{max-width:480px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
 #hdr{padding:14px 16px 0;display:flex;justify-content:space-between;align-items:center;}
-.logo{font-family:var(--display);font-size:26px;letter-spacing:3px;}
-.logo span{color:var(--acc);}
 #nav{display:flex;border-bottom:1px solid var(--border);margin:0 0 12px;overflow-x:auto;}
 .nb{flex:1;min-width:55px;background:transparent;border:none;border-bottom:2px solid transparent;padding:10px 2px 9px;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text3);white-space:nowrap;}
 .nb.on{color:var(--acc);border-bottom-color:var(--acc);}
@@ -45,6 +36,20 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 .bw{height:3px;background:var(--bg3);border-radius:2px;overflow:hidden;margin:8px 0;}
 .bf{height:100%;border-radius:2px;background:var(--acc);transition:width .3s;}
 .bf.ov{background:var(--red);}
+/* CLIENT SELECTOR */
+#csel{display:flex;align-items:center;gap:8px;padding:10px 16px 0;}
+#csdrop{flex:1;background:var(--bg3);border:.5px solid var(--border2);color:var(--text);padding:8px 12px;border-radius:var(--rsm);font-family:var(--font);font-size:13px;-webkit-appearance:none;appearance:none;}
+#csdrop:focus{border-color:var(--acc);outline:none;}
+.cmgr{background:var(--acc-dim);border:.5px solid var(--acc-border);color:var(--acc);border-radius:var(--rsm);padding:8px 12px;font-size:12px;font-weight:600;flex-shrink:0;white-space:nowrap;}
+/* MODAL */
+#modal{position:fixed;inset:0;z-index:200;display:none;align-items:flex-end;justify-content:center;}
+#modal.on{display:flex;}
+.mbdrop{position:absolute;inset:0;background:rgba(0,0,0,.65);}
+.mbox{position:relative;background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r) var(--r) 0 0;padding:20px 16px 36px;width:100%;max-width:480px;max-height:78vh;overflow-y:auto;}
+.mttl{font-family:var(--display);font-size:22px;letter-spacing:2px;margin-bottom:16px;}
+.citem{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:.5px solid var(--border);}
+.cnm{flex:1;font-size:14px;}
+.cact{font-size:9px;color:var(--acc);letter-spacing:1.5px;text-transform:uppercase;background:var(--acc-dim);border:.5px solid var(--acc-border);border-radius:4px;padding:2px 6px;flex-shrink:0;}
 /* TIMER */
 #tbar{position:sticky;top:0;z-index:100;background:var(--acc);padding:10px 16px;display:none;align-items:center;gap:12px;}
 #tbar.on{display:flex;}
@@ -127,6 +132,10 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
     </div>
     <div id="tbadge" style="font-family:var(--mono);font-size:10px;color:var(--text3)"></div>
   </div>
+  <div id="csel">
+    <select id="csdrop" onchange="selClient(this.value)"></select>
+    <button class="cmgr" onclick="openModal()">+ Clients</button>
+  </div>
   <div id="nav">
     <button class="nb on" onclick="sw('train')">Train</button>
     <button class="nb" onclick="sw('eat')">Eat</button>
@@ -162,7 +171,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
           <div><div class="lbl">Calories Remaining</div><div class="cr gd" id="crem">2100</div><div style="font-size:11px;color:var(--text3);margin-top:2px">kcal left today</div></div>
           <div style="text-align:right"><div style="font-size:11px;color:var(--text3)">eaten</div><div id="ceat" style="font-family:var(--mono);font-size:22px">0</div><div style="font-size:11px;color:var(--text3);margin-top:2px">goal: 2,100</div></div>
         </div>
-        <div class="bw"><div class="bf" id="cbar" style="width:0%"></div></div>
+        <div class="bw"><div class="bf" id="calbar" style="width:0%"></div></div>
       </div>
       <div class="mgrid" id="mgrid"></div>
       <div class="card" id="nuinp"></div>
@@ -187,92 +196,57 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
     <div class="tab" id="tab-program">
       <div class="card">
         <div style="font-family:var(--display);font-size:22px;letter-spacing:2px;margin-bottom:6px">Program Editor</div>
-        <div style="font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:14px">Edit exercises on the fly from your phone at the gym, or via Cowork on your PC. <span style="color:var(--text3)">Logged data is never touched.</span></div>
+        <div style="font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:14px">Build this client's program from scratch. Each day is independent. <span style="color:var(--text3)">Logged workout data is never touched.</span></div>
         <div class="pdtabs" id="pdtabs"></div>
       </div>
       <div id="peditor"></div>
-      <div class="card"><button class="bgh" style="width:100%;margin-bottom:8px" onclick="resetProg()">↺ Reset to Default Program</button><div style="font-size:10px;color:var(--text3);text-align:center">Resets exercises only. All logged data is kept.</div></div>
+      <div class="card" id="progfooter" style="display:none"><button class="bgh" style="width:100%;margin-bottom:8px" onclick="clearProg()">✕ Clear This Day's Exercises</button><div style="font-size:10px;color:var(--text3);text-align:center">Removes all exercises for this day. Logged data is kept.</div></div>
     </div>
     <div class="tab" id="tab-summary">
       <div class="card">
-        <div style="font-family:var(--display);font-size:26px;letter-spacing:2px;margin-bottom:8px">Weekly Check-In</div>
-        <div style="font-size:13px;color:var(--text2);line-height:1.75;margin-bottom:18px">Generate your summary, copy it, open a new Claude chat in your project, type <strong style="color:var(--acc)">"Weekly check-in"</strong> and paste.</div>
-        <div class="card" style="background:var(--bg3);margin-bottom:16px">
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">1</div><span style="font-size:12px;color:var(--text2)">Generate the summary below</span></div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">2</div><span style="font-size:12px;color:var(--text2)">Copy it to clipboard</span></div>
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">3</div><span style="font-size:12px;color:var(--text2)">Open a new Claude chat in your ACT project</span></div>
-          <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">4</div><span style="font-size:12px;color:var(--text2)">Type "Weekly check-in" and paste the report</span></div>
+        <div style="font-family:var(--display);font-size:26px;letter-spacing:2px;margin-bottom:8px">Weekly Reports</div>
+        <div style="font-size:13px;color:var(--text2);line-height:1.75;margin-bottom:16px">Generate your AI coaching check-in or a friendly client-facing report.</div>
+        <div style="display:flex;gap:8px">
+          <button class="bacc" id="genbtn" onclick="genSum('ai')" style="flex:1;padding:13px 8px;font-family:var(--display);font-size:15px;letter-spacing:1px">AI CHECK-IN</button>
+          <button class="bgh" id="genbtn2" onclick="genSum('client')" style="flex:1;padding:13px 8px;font-family:var(--display);font-size:15px;letter-spacing:1px;border:.5px solid var(--border2)">CLIENT REPORT</button>
         </div>
-        <button class="bacc" id="genbtn" onclick="genSum()" style="width:100%;padding:14px;font-family:var(--display);font-size:20px;letter-spacing:2px">GENERATE SUMMARY</button>
       </div>
       <div class="card" id="sumout" style="display:none">
-        <div class="row" style="margin-bottom:10px"><div class="lbl">Your Summary</div><div style="flex:1"></div><button class="bgh bsm" id="cpbtn" onclick="copySum()">Copy</button></div>
+        <div class="row" style="margin-bottom:10px"><div class="lbl" id="sumttl">Summary</div><div style="flex:1"></div><button class="bgh bsm" id="cpbtn" onclick="copySum()">Copy</button></div>
         <textarea class="inp" id="sumtxt" rows="24" readonly></textarea>
       </div>
     </div>
   </div>
 </div>
+
+<!-- MANAGE CLIENTS MODAL -->
+<div id="modal">
+  <div class="mbdrop" onclick="closeModal()"></div>
+  <div class="mbox">
+    <div class="mttl">Manage Clients</div>
+    <div id="clist"></div>
+    <div style="margin-top:16px">
+      <div class="lbl" style="margin-bottom:6px">Add New Client</div>
+      <div class="row">
+        <input class="inp" id="cnew" type="text" placeholder="Client name..." style="flex:1" onkeydown="if(event.key==='Enter')addClient()"/>
+        <button class="bacc bsm" onclick="addClient()">Add</button>
+      </div>
+    </div>
+    <button class="bgh" style="width:100%;margin-top:16px" onclick="closeModal()">Done</button>
+  </div>
+</div>
+
 <div id="toast"></div>
 
 <script>
-/* ============================================================
-   SECTION: TARGETS — Edit via Cowork to update goals
-   ============================================================ */
 const TARGETS={cal:2100,prot:200,fat:65,carbs:220,fiber:30,steps:8000};
-
-/* ============================================================
-   SECTION: DEFAULT_PROGRAM — Edit via Cowork for permanent
-   changes. Use the Program tab in-app for on-the-fly changes.
-   Keys: 1=Monday, 3=Wednesday, 5=Friday
-   ============================================================ */
-const DEFAULT_PROGRAM={
-  1:{name:'UPPER',exercises:[
-    {id:'fdb',name:'Flat DB Press',sets:3,reps:'8-12',rest:150,note:'Pain-free depth only. Elbows just above bench.'},
-    {id:'idb',name:'Incline DB Press',sets:3,reps:'8-12',rest:150,note:'35-45 lbs confirmed pain-free. Full ROM.'},
-    {id:'pu',name:'Pull-up',sets:2,reps:'6-8',rest:90,note:'Maintenance. Superset with Neck Flexion.'},
-    {id:'nfl',name:'Neck Flexion (weighted)',sets:2,reps:'12-15',rest:0,note:'Plate on forehead + towel. No rest - superset.'},
-    {id:'rr',name:'Ring Row',sets:2,reps:'8-12',rest:90,note:'Maintenance. Superset with Neck Extension.'},
-    {id:'nex',name:'Neck Extension (weighted)',sets:2,reps:'12-15',rest:0,note:'Plate on back of head. No rest - superset.'},
-    {id:'fp',name:'Face Pull (band)',sets:3,reps:'12-15',rest:60,note:'Non-negotiable posture work. Superset with Pull-Apart.'},
-    {id:'pa',name:'Band Pull-Apart',sets:3,reps:'15',rest:0,note:'Mid trap. No weight. No rest - superset.'},
-    {id:'lr',name:'DB Lateral Raise',sets:1,reps:'12-15 myorep',rest:60,note:'One cluster set only.'},
-    {id:'hh',name:'Hollow Hold',sets:2,reps:'30s',rest:0,note:'Active PPT. No rest - superset with Pallof.'},
-    {id:'pp',name:'Pallof Press (band)',sets:2,reps:'10/side',rest:60,note:'Anti-rotation core. Superset.'}
-  ]},
-  3:{name:'LOWER',exercises:[
-    {id:'gs',name:'Heels-Elevated Goblet Squat',sets:3,reps:'8-12',rest:150,note:'Plates under heels. Quad bias.'},
-    {id:'bss',name:'Bulgarian Split Squat',sets:2,reps:'10/leg',rest:150,note:'Quad + glute. Control the descent.'},
-    {id:'rdl',name:'DB RDL',sets:3,reps:'8-10',rest:150,note:'Active PPT at top. No lumbar hyperextension.'},
-    {id:'ht',name:'DB Hip Thrust',sets:2,reps:'10-12',rest:120,note:'Squeeze hard at top. APT correction.'},
-    {id:'sc',name:'Standing Calf Raise',sets:2,reps:'12-15 myorep',rest:60,note:'1s pause at bottom. Full stretch.'},
-    {id:'stc',name:'Seated Calf Raise',sets:2,reps:'15-20 myorep',rest:60,note:'Plate on knee. Soleus focus.'},
-    {id:'db2',name:'Dead Bug',sets:2,reps:'8/side',rest:0,note:'Lower back GLUED to floor. Superset.'},
-    {id:'hkr',name:'Hanging Knee Raise',sets:2,reps:'8-12',rest:60,note:'PPT at top. Superset with Dead Bug.'},
-    {id:'ct',name:'Chin Tuck Hold',sets:2,reps:'30s',rest:60,note:'Postural endurance. Chin back not down.'}
-  ]},
-  5:{name:'FULL BODY',exercises:[
-    {id:'rpu',name:'Incline Ring Push-up',sets:3,reps:'8-12',rest:150,note:'Stage 2 chest rehab. Rings elevated.'},
-    {id:'fly',name:'DB Fly / Band Fly',sets:2,reps:'12-15',rest:120,note:'Controlled stretch. Stop at any chest pain.'},
-    {id:'wpu',name:'Weighted Pull-up',sets:2,reps:'5-8',rest:90,note:'Maintenance. Superset with Neck Lateral.'},
-    {id:'nlt',name:'Banded Neck Lateral Flexion',sets:2,reps:'12/side',rest:0,note:'Both sides. No rest - superset.'},
-    {id:'gf',name:'Goblet Squat / Step-up',sets:2,reps:'10-12',rest:120,note:'Light. Second leg exposure this week.'},
-    {id:'cf',name:'Standing Calf Raise',sets:2,reps:'12-15 myorep',rest:60,note:'Second calf session this week.'},
-    {id:'ytw',name:'Prone Y-T-W Raise',sets:2,reps:'8 each letter',rest:60,note:'Lower trap + posture. Non-negotiable.'},
-    {id:'fpf',name:'Face Pull (band)',sets:2,reps:'15',rest:60,note:'Posture reinforcement.'},
-    {id:'aw',name:'Ab Wheel Rollout',sets:2,reps:'8-12',rest:60,note:'Active PPT throughout.'}
-  ]}
-};
-
-/* ============================================================
-   SECTION: MEAS_FIELDS — Body measurement sites
-   ============================================================ */
 const MF=[{k:'waist',l:'Waist'},{k:'neck',l:'Neck'},{k:'chest',l:'Chest'},{k:'shoulders',l:'Shoulders'},{k:'bicep',l:'Bicep (flexed)'},{k:'thigh',l:'Thigh (widest)'},{k:'calf',l:'Calf (widest)'}];
 const MDS=[{k:'prot',l:'Protein',t:200,u:'g',c:'var(--acc)'},{k:'fat',l:'Fat',t:65,u:'g',c:'#a78bfa'},{k:'carbs',l:'Carbs',t:220,u:'g',c:'#38bdf8'},{k:'fiber',l:'Fiber',t:30,u:'g',c:'var(--green)'}];
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DK=[1,3,5];const DL={1:'Monday',3:'Wednesday',5:'Friday'};
 
-let cdate=tstr(),tiv=null,tsec=0,ttot=0,eset=null,apd=1,openSN=new Set();
+let cdate=tstr(),tiv=null,tsec=0,ttot=0,eset=null,apd=1,openSN=new Set(),cid=null;
 
 function tstr(){return new Date().toISOString().split('T')[0];}
 function pd(s){return new Date(s+'T12:00:00');}
@@ -282,6 +256,8 @@ function monOf(s){const d=pd(s),dy=d.getDay(),df=dy===0?-6:1-dy;d.setDate(d.getD
 function fmt(s){const d=pd(s);return DAYS[d.getDay()]+' '+MONS[d.getMonth()]+' '+d.getDate();}
 function clamp(v,a,b){return Math.min(b,Math.max(a,v));}
 function uid(){return Math.random().toString(36).slice(2,7);}
+function esc(s){return(s+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function escAttr(s){return esc(s).replace(/"/g,'&quot;');}
 
 const DB={
   get(k){try{const v=localStorage.getItem(k);return v?JSON.parse(v):null;}catch{return null;}},
@@ -289,20 +265,75 @@ const DB={
   keys(p){const o=[];for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith(p))o.push(k);}return o;}
 };
 
-function getProg(){const s=DB.get('prog');if(s)return s;DB.set('prog',DEFAULT_PROGRAM);return DEFAULT_PROGRAM;}
-function setProg(p){DB.set('prog',p);}
-function getWO(d){return DB.get('wo:'+d);}
-function setWO(d,v){DB.set('wo:'+d,v);}
-function getNU(d){return DB.get('nu:'+d)||{cal:0,prot:0,fat:0,carbs:0,fiber:0,steps:0};}
-function setNU(d,v){DB.set('nu:'+d,v);}
-function getWT(d){return DB.get('wt:'+d);}
-function setWT(d,v){DB.set('wt:'+d,v);}
-function getMS(d){return DB.get('ms:'+d);}
-function setMS(d,v){DB.set('ms:'+d,v);}
-function allMS(){return DB.keys('ms:').sort().reverse().map(k=>({date:k.slice(3),data:DB.get(k)}));}
+/* ── CLIENT MANAGEMENT ── */
+function getClients(){return DB.get('act:clients')||[];}
+function setClients(arr){DB.set('act:clients',arr);}
+function ck(key){return cid+':'+key;}
+function clientName(){return getClients().find(c=>c.id===cid)?.name||'Client';}
+
+function getProg(){const s=DB.get(ck('prog'));if(s)return s;const e={1:{name:'Day 1',exercises:[]},3:{name:'Day 2',exercises:[]},5:{name:'Day 3',exercises:[]}};DB.set(ck('prog'),e);return e;}
+function setProg(p){DB.set(ck('prog'),p);}
+function getWO(d){return DB.get(ck('wo:'+d));}
+function setWO(d,v){DB.set(ck('wo:'+d),v);}
+function getNU(d){return DB.get(ck('nu:'+d))||{cal:0,prot:0,fat:0,carbs:0,fiber:0,steps:0};}
+function setNU(d,v){DB.set(ck('nu:'+d),v);}
+function getWT(d){return DB.get(ck('wt:'+d));}
+function setWT(d,v){DB.set(ck('wt:'+d),v);}
+function getMS(d){return DB.get(ck('ms:'+d));}
+function setMS(d,v){DB.set(ck('ms:'+d),v);}
+function allMS(){const p=ck('ms:');return DB.keys(p).sort().reverse().map(k=>({date:k.slice(p.length),data:DB.get(k)}));}
+
+function rCsel(){
+  const clients=getClients(),sel=document.getElementById('csdrop');
+  sel.innerHTML='<option value="">— Select Client —</option>'+clients.map(c=>'<option value="'+c.id+'"'+(c.id===cid?' selected':'')+'>'+escAttr(c.name)+'</option>').join('');
+}
+
+function selClient(id){
+  cid=id||null;
+  DB.set('act:active',cid);
+  openSN=new Set();eset=null;
+  const at=document.querySelector('.tab.on').id.replace('tab-','');
+  sw(at);
+}
+
+function noClientHTML(){
+  return '<div style="text-align:center;padding:60px 20px"><div style="font-size:38px;margin-bottom:12px">👤</div><div style="font-family:var(--display);font-size:24px;letter-spacing:2px;margin-bottom:8px;color:var(--text2)">No Client Selected</div><div style="font-size:13px;color:var(--text3)">Select or add a client above.</div></div>';
+}
+
+/* ── MODAL ── */
+function openModal(){
+  rModal();
+  document.getElementById('modal').classList.add('on');
+  setTimeout(()=>document.getElementById('cnew').focus(),100);
+}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+function rModal(){
+  const clients=getClients();
+  document.getElementById('clist').innerHTML=clients.length
+    ?clients.map(c=>'<div class="citem"><div class="cnm">'+esc(c.name)+'</div>'+(c.id===cid?'<span class="cact">Active</span>':'')+' <button class="debtn" onclick="delClient(\''+c.id+'\')">Remove</button></div>').join('')
+    :'<div style="font-size:13px;color:var(--text3);padding:12px 0">No clients yet. Add one below.</div>';
+}
+function addClient(){
+  const inp=document.getElementById('cnew'),name=inp.value.trim();
+  if(!name)return;
+  const clients=getClients();
+  if(clients.some(c=>c.name.toLowerCase()===name.toLowerCase())){toast('Client already exists');return;}
+  clients.push({id:uid(),name});
+  setClients(clients);
+  inp.value='';
+  rModal();rCsel();
+  toast('Client added');
+}
+function delClient(id){
+  if(!confirm('Remove this client? Their data stays in storage but won\'t be accessible here.'))return;
+  setClients(getClients().filter(c=>c.id!==id));
+  if(cid===id){cid=null;DB.set('act:active',null);}
+  rModal();rCsel();
+  if(!cid){const at=document.querySelector('.tab.on').id.replace('tab-','');sw(at);}
+  toast('Client removed');
+}
 
 function toast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2000);}
-
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();[0,.18,.36].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.4,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+.18);o.start(c.currentTime+t);o.stop(c.currentTime+t+.2);});}catch(e){}}
 
 function startTimer(s){
@@ -328,18 +359,22 @@ function sw(name){
 function chDate(d){cdate=addD(cdate,d);updDates();const at=document.querySelector('.tab.on').id.replace('tab-','');sw(at);}
 function updDates(){const l=fmt(cdate);document.getElementById('tbadge').textContent=tstr();['tdn','edn'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent=l;});}
 
-/* TRAIN */
+/* ── TRAIN ── */
 function rTrain(){
-  const pg=getProg()[dow(cdate)],body=document.getElementById('tbody'),sub=document.getElementById('tds');
-  if(!pg){sub.textContent='REST DAY';sub.className='dsub rst';body.innerHTML='<div style="text-align:center;padding:50px 20px"><div style="font-family:var(--display);font-size:32px;letter-spacing:3px;margin-bottom:8px">Rest Day</div><div style="font-size:13px;color:var(--text2);line-height:1.7">Recovery is where growth happens.</div><div style="font-size:11px;color:var(--text3);margin-top:8px">Do your daily corrective block.<br/>Chin tucks · Dead bugs · Thoracic extension · Wall reset</div></div>';return;}
+  const body=document.getElementById('tbody'),sub=document.getElementById('tds');
+  if(!cid){sub.textContent='';sub.className='dsub rst';body.innerHTML=noClientHTML();return;}
+  const pg=getProg()[dow(cdate)];
+  if(!pg||!pg.exercises||!pg.exercises.length){sub.textContent='NO PROGRAM';sub.className='dsub rst';body.innerHTML='<div style="text-align:center;padding:50px 20px"><div style="font-family:var(--display);font-size:28px;letter-spacing:3px;margin-bottom:8px">No Program</div><div style="font-size:13px;color:var(--text2);line-height:1.7">Build this client\'s program in the Program tab.</div></div>';return;}
   sub.textContent=pg.name+' DAY';sub.className='dsub';
   const wo=getWO(cdate);
-  if(!wo){body.innerHTML='<div class="card" style="text-align:center;padding:24px 16px 32px"><div style="font-family:var(--display);font-size:28px;letter-spacing:2px;margin-bottom:6px">'+pg.name+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:28px">'+pg.exercises.length+' exercises</div><button class="bacc" style="font-family:var(--display);font-size:22px;letter-spacing:3px;padding:16px 50px;border-radius:var(--r)" onclick="startWO()">START WORKOUT</button></div>';return;}
+  if(!wo){body.innerHTML='<div class="card" style="text-align:center;padding:24px 16px 32px"><div style="font-family:var(--display);font-size:28px;letter-spacing:2px;margin-bottom:6px">'+esc(pg.name)+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:28px">'+pg.exercises.length+' exercises</div><button class="bacc" style="font-family:var(--display);font-size:22px;letter-spacing:3px;padding:16px 50px;border-radius:var(--r)" onclick="startWO()">START WORKOUT</button></div>';return;}
   let h='<div class="card"><div class="lbl" style="margin-bottom:8px">Quick Rest Timer</div><div class="tq">'+[[60,'1m'],[90,'1:30'],[120,'2m'],[180,'3m']].map(([s,l])=>'<button data-s="'+s+'" onclick="startTimer('+s+')">'+l+'</button>').join('')+'</div></div>';
   wo.exs.forEach((ex,ei)=>{
     const pr=pg.exercises[ei]||{},ad=ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r));
-    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="Notes, cues, how it felt..." oninput="updExNote('+ei+',this.value)">'+(ex.note?ex.note.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):'')+'</textarea></div></div>';
+    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+esc(ex.name)+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+esc(pr.note)+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="Notes, cues, how it felt..." oninput="updExNote('+ei+',this.value)">'+esc(ex.note||'')+'</textarea></div></div>';
   });
+  const tn=wo.trainerNote||'';
+  h+='<div class="card" style="border-color:var(--acc-border);margin-top:4px"><div class="lbl" style="margin-bottom:6px;color:var(--acc)">Trainer Session Notes</div><textarea class="inp" rows="3" placeholder="Private coaching notes for this session..." oninput="saveTrainerNote(this.value)">'+esc(tn)+'</textarea></div>';
   body.innerHTML=h;
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',tiv&&parseInt(b.dataset.s)===ttot));
 }
@@ -347,9 +382,9 @@ function rTrain(){
 function rSets(sets,ei,rest){
   return sets.map((s,si)=>{
     const isE=eset&&eset.ei===ei&&eset.si===si;
-    if(isE)return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.w||'')+'" placeholder="lbs" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.r||'')+'" placeholder="reps" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';
-    const hd=s.done||(s.w&&s.r),skey=ei+'-'+si,shown=!!(s.note)||openSN.has(skey),sntxt=s.note?(s.note+'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
-    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.w?s.w+' lbs':'— lbs')+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.r?s.r+' reps':'— reps')+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
+    if(isE)return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="numeric" pattern="[0-9]*" value="'+escAttr(s.w||'')+'" placeholder="lbs" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+escAttr(s.r||'')+'" placeholder="reps" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';
+    const hd=s.done||(s.w&&s.r),skey=ei+'-'+si,shown=!!(s.note)||openSN.has(skey),sntxt=escAttr(s.note||'');
+    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.w?esc(s.w)+' lbs':'— lbs')+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.r?esc(s.r)+' reps':'— reps')+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
   }).join('');
 }
 
@@ -361,19 +396,22 @@ function addSet(ei){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets.push({w:
 function updExNote(ei,val){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].note=val;setWO(cdate,wo);}
 function togSetNote(ei,si){const key=ei+'-'+si,el=document.getElementById('sn-'+ei+'-'+si);if(!el)return;if(openSN.has(key)){openSN.delete(key);el.style.display='none';}else{openSN.add(key);el.style.display='block';el.querySelector('input')?.focus();}}
 function saveSetNote(ei,si,val){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets[si].note=val;setWO(cdate,wo);}
+function saveTrainerNote(val){const wo=getWO(cdate);if(!wo)return;wo.trainerNote=val;setWO(cdate,wo);}
 
-/* EAT */
+/* ── EAT ── */
 function rEat(){
+  if(!cid){document.getElementById('mgrid').innerHTML='';document.getElementById('nuinp').innerHTML=noClientHTML();document.getElementById('crem').textContent='—';document.getElementById('crem').className='cr';document.getElementById('ceat').textContent='—';document.getElementById('calbar').style.width='0%';return;}
   const nu=getNU(cdate);updCal(nu);
   document.getElementById('mgrid').innerHTML=MDS.map(m=>{const v=nu[m.k]||0,p=clamp(Math.round(v/m.t*100),0,100),ov=v>m.t;return '<div class="mcard"><div class="lbl">'+m.l+'</div><div class="mv'+(ov?' ov':'')+'">'+v+'<span style="font-size:11px;color:var(--text3);margin-left:2px">'+m.u+'</span></div><div class="bw"><div class="bf'+(ov?' ov':'')+'" style="width:'+p+'%;background:'+(ov?'var(--red)':m.c)+'"></div></div><div class="mp">'+p+'% of '+m.t+m.u+'</div></div>';}).join('');
   const fl=[{k:'cal',l:'Calories',t:2100,u:'kcal',s:'1'},{k:'prot',l:'Protein',t:200,u:'g',s:'1'},{k:'fat',l:'Fat',t:65,u:'g',s:'1'},{k:'carbs',l:'Carbs',t:220,u:'g',s:'1'},{k:'fiber',l:'Fiber',t:30,u:'g',s:'1'},{k:'steps',l:'Steps',t:8000,u:'',s:'100'}];
   document.getElementById('nuinp').innerHTML='<div class="lbl" style="margin-bottom:10px">Log Your Intake</div>'+fl.map(f=>'<div style="margin-bottom:10px"><div class="lbl">'+f.l+' <span style="color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0;font-size:10px">/ '+f.t+f.u+'</span></div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" step="'+f.s+'" value="'+(nu[f.k]||'')+'" placeholder="0" oninput="saveNF(\''+f.k+'\',this.value)"/></div>').join('');
 }
-function updCal(nu){const e=nu.cal||0,r=TARGETS.cal-e,p=clamp(Math.round(e/TARGETS.cal*100),0,100);const re=document.getElementById('crem');re.textContent=r;re.className='cr '+(r<0?'ov':r<300?'wn':'gd');document.getElementById('ceat').textContent=e;const b=document.getElementById('cbar');b.style.width=p+'%';b.className='bf'+(e>TARGETS.cal?' ov':'');}
+function updCal(nu){const e=nu.cal||0,r=TARGETS.cal-e,p=clamp(Math.round(e/TARGETS.cal*100),0,100);const re=document.getElementById('crem');re.textContent=r;re.className='cr '+(r<0?'ov':r<300?'wn':'gd');document.getElementById('ceat').textContent=e;const b=document.getElementById('calbar');b.style.width=p+'%';b.className='bf'+(e>TARGETS.cal?' ov':'');}
 function saveNF(k,v){const nu=getNU(cdate);nu[k]=parseFloat(v)||0;setNU(cdate,nu);updCal(nu);}
 
-/* MEASURE */
+/* ── MEASURE ── */
 function rMeasure(){
+  if(!cid){document.getElementById('wtd').innerHTML='—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span>';document.getElementById('wavg').textContent='—';document.getElementById('wchart').innerHTML='';document.getElementById('wlabels').innerHTML='';document.getElementById('mfields').innerHTML=noClientHTML();document.getElementById('mhcard').style.display='none';return;}
   const tw=getWT(tstr());document.getElementById('wtd').innerHTML=tw?tw+'<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span>':'—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span>';document.getElementById('winp').value='';
   const l7=[];for(let i=6;i>=0;i--){const w=getWT(addD(tstr(),-i));if(w!=null)l7.push(w);}
   document.getElementById('wavg').textContent=l7.length?(l7.reduce((a,b)=>a+b,0)/l7.length).toFixed(1):'—';
@@ -390,52 +428,97 @@ function loadHE(d){document.getElementById('mdate').value=d;loadMF(d);}
 function logWt(){const v=parseFloat(document.getElementById('winp').value);if(isNaN(v))return;setWT(tstr(),v);rMeasure();toast('Weight logged');}
 function saveM(){const d=document.getElementById('mdate').value,data={};MF.forEach(f=>{const v=document.getElementById('mf-'+f.k)?.value;if(v)data[f.k]=parseFloat(v);});setMS(d,data);const b=document.getElementById('msvbtn');b.className='svbtn sv';b.textContent='Saved!';setTimeout(()=>{b.className='svbtn us';b.textContent='Save Measurements';},2500);rMH();toast('Measurements saved');}
 
-/* PROGRAM EDITOR */
+/* ── PROGRAM ── */
 function rProg(){
+  const pf=document.getElementById('progfooter');
+  if(!cid){document.getElementById('pdtabs').innerHTML='';document.getElementById('peditor').innerHTML=noClientHTML();pf.style.display='none';return;}
   document.getElementById('pdtabs').innerHTML=DK.map(k=>'<button class="pdt'+(apd===k?' on':'')+'" onclick="setPD('+k+')">'+DL[k].slice(0,3)+'</button>').join('');
+  pf.style.display='block';
   rPE();
 }
 function setPD(k){apd=k;rProg();}
 function rPE(){
+  if(!cid)return;
   const prog=getProg(),day=prog[apd];
-  if(!day){document.getElementById('peditor').innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--text3)">No program for this day.</div>';return;}
-  let h=day.exercises.map((ex,ei)=>'<div class="pecard" id="pe-'+ei+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--text3)">Exercise '+(ei+1)+'</span><button class="debtn" onclick="delEx('+ei+')">Remove</button></div><div style="margin-bottom:8px"><div class="lbl">Name</div><input class="inp" value="'+ex.name.replace(/"/g,'&quot;')+'" placeholder="Exercise name" oninput="updEX('+ei+',\'name\',this.value)"/></div><div class="fr"><div class="fg"><div class="lbl">Sets</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.sets+'" placeholder="3" oninput="updEX('+ei+',\'sets\',parseInt(this.value)||1)" style="text-align:center"/></div><div class="fg"><div class="lbl">Reps</div><input class="inp" value="'+ex.reps.replace(/"/g,'&quot;')+'" placeholder="8-12" oninput="updEX('+ei+',\'reps\',this.value)"/></div><div class="fg"><div class="lbl">Rest(s)</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.rest+'" placeholder="90" oninput="updEX('+ei+',\'rest\',parseInt(this.value)||0)" style="text-align:center"/></div></div><div><div class="lbl">Notes / Cues</div><textarea class="inp" rows="2" placeholder="Form cues, pairing info..." oninput="updEX('+ei+',\'note\',this.value)">'+(ex.note||'')+'</textarea></div></div>').join('');
+  if(!day){document.getElementById('peditor').innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--text3)">No data for this day.</div>';return;}
+  let h=day.exercises.map((ex,ei)=>'<div class="pecard" id="pe-'+ei+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--text3)">Exercise '+(ei+1)+'</span><button class="debtn" onclick="delEx('+ei+')">Remove</button></div><div style="margin-bottom:8px"><div class="lbl">Name</div><input class="inp" value="'+escAttr(ex.name)+'" placeholder="Exercise name" oninput="updEX('+ei+',\'name\',this.value)"/></div><div class="fr"><div class="fg"><div class="lbl">Sets</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.sets+'" placeholder="3" oninput="updEX('+ei+',\'sets\',parseInt(this.value)||1)" style="text-align:center"/></div><div class="fg"><div class="lbl">Reps</div><input class="inp" value="'+escAttr(ex.reps)+'" placeholder="8-12" oninput="updEX('+ei+',\'reps\',this.value)"/></div><div class="fg"><div class="lbl">Rest(s)</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.rest+'" placeholder="90" oninput="updEX('+ei+',\'rest\',parseInt(this.value)||0)" style="text-align:center"/></div></div><div><div class="lbl">Notes / Cues</div><textarea class="inp" rows="2" placeholder="Form cues, pairing info..." oninput="updEX('+ei+',\'note\',this.value)">'+esc(ex.note||'')+'</textarea></div></div>').join('');
   h+='<button class="aebtn" onclick="addEx()">+ Add Exercise</button>';
   document.getElementById('peditor').innerHTML=h;
 }
 function updEX(ei,field,val){const p=getProg();p[apd].exercises[ei][field]=val;setProg(p);}
 function delEx(ei){if(!confirm('Remove this exercise?'))return;const p=getProg();p[apd].exercises.splice(ei,1);setProg(p);rPE();toast('Exercise removed');}
 function addEx(){const p=getProg();p[apd].exercises.push({id:uid(),name:'New Exercise',sets:3,reps:'8-12',rest:90,note:''});setProg(p);rPE();setTimeout(()=>document.getElementById('peditor').lastElementChild?.scrollIntoView({behavior:'smooth'}),100);toast('Exercise added');}
-function resetProg(){if(!confirm('Reset to default program? All logged data is kept.'))return;setProg(JSON.parse(JSON.stringify(DEFAULT_PROGRAM)));rPE();toast('Reset to defaults');}
+function clearProg(){if(!confirm('Clear all exercises for '+DL[apd]+'?'))return;const p=getProg();p[apd].exercises=[];setProg(p);rPE();toast('Day cleared');}
 
-/* SUMMARY */
-function genSum(){
-  const btn=document.getElementById('genbtn');btn.textContent='GENERATING...';btn.disabled=true;
+/* ── SUMMARY ── */
+function genSum(mode){
+  if(!cid){toast('Select a client first');return;}
+  const b1=document.getElementById('genbtn'),b2=document.getElementById('genbtn2');
+  b1.disabled=true;b2.disabled=true;
   setTimeout(()=>{
-    const mn=monOf(cdate),days=[];
+    const mn=monOf(cdate),days=[],name=clientName();
     for(let i=0;i<7;i++){const d=addD(mn,i);days.push({d,wo:getWO(d),nu:getNU(d),wt:getWT(d)});}
-    let t='WEEKLY TRAINER CHECK-IN\nWeek of '+mn+'\n'+'='.repeat(40)+'\n\n';
-    t+='WORKOUTS\n'+'─'.repeat(38)+'\n';
-    const wd=days.filter(d=>d.wo);
-    if(!wd.length)t+='No workouts logged.\n';
-    else wd.forEach(dy=>{t+='\n'+DAYS[dow(dy.d)]+' '+dy.d+' — '+dy.wo.prog+'\n';dy.wo.exs.forEach(ex=>{const lg=ex.sets.filter(s=>s.w||s.r);if(lg.length){t+='  '+ex.name+'\n  '+lg.map(s=>(s.w||'?')+'lbs x '+(s.r||'?')).join(' | ')+'\n';}});});
-    t+='\nNUTRITION — Daily Averages\n'+'─'.repeat(38)+'\n';
-    const nd=days.filter(d=>d.nu&&d.nu.cal>0);
-    if(!nd.length)t+='No nutrition logged.\n';
-    else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length),hit=(v,t2)=>v>=t2?'[HIT]':'[MISS]';t+='Tracked: '+nd.length+'/7 days\nCalories: '+avg('cal')+' / 2100   '+hit(avg('cal'),TARGETS.cal)+'\nProtein:  '+avg('prot')+'g / 200g   '+hit(avg('prot'),TARGETS.prot)+'\nFat:      '+avg('fat')+'g / 65g\nCarbs:    '+avg('carbs')+'g / 220g\nSteps:    '+avg('steps')+' / 8000   '+hit(avg('steps'),TARGETS.steps)+'\n';}
-    t+='\nWEIGHT\n'+'─'.repeat(38)+'\n';
-    const wtd=days.filter(d=>d.wt!=null);
-    if(!wtd.length)t+='No weigh-ins logged.\n';
-    else{const ws=wtd.map(d=>d.wt);t+='Logged: '+wtd.length+'/7\nLow: '+Math.min(...ws)+' lbs  |  High: '+Math.max(...ws)+' lbs\n7-day avg: '+(ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(1)+' lbs\n';wtd.forEach(d=>{t+='  '+d.d+': '+d.wt+' lbs\n';});}
-    const wm=allMS().filter(({date})=>date>=mn&&date<=addD(mn,6));
-    if(wm.length){t+='\nBODY MEASUREMENTS\n'+'─'.repeat(38)+'\n';wm.forEach(({date,data})=>{t+=fmt(date)+'\n';MF.forEach(f=>{if(data[f.k])t+='  '+f.l+': '+data[f.k]+'"\n';});});}
-    t+='\n'+'='.repeat(40)+'\nHOW TO USE: Copy this report, open a new Claude chat\nin your ACT project, type "Weekly check-in" + paste.\n'+'='.repeat(40)+'\n';
-    document.getElementById('sumtxt').value=t;document.getElementById('sumout').style.display='block';btn.textContent='REGENERATE';btn.disabled=false;
+    let t='';
+    if(mode==='ai'){
+      document.getElementById('sumttl').textContent='AI Trainer Check-In';
+      t='WEEKLY TRAINER CHECK-IN — '+name.toUpperCase()+'\nWeek of '+mn+'\n'+'='.repeat(40)+'\n\n';
+      t+='WORKOUTS\n'+'─'.repeat(38)+'\n';
+      const wd=days.filter(d=>d.wo);
+      if(!wd.length)t+='No workouts logged.\n';
+      else wd.forEach(dy=>{
+        t+='\n'+DAYS[dow(dy.d)]+' '+dy.d+' — '+dy.wo.prog+'\n';
+        dy.wo.exs.forEach(ex=>{
+          const lg=ex.sets.filter(s=>s.w||s.r);
+          if(lg.length){t+='  '+ex.name+'\n  '+lg.map(s=>(s.w||'?')+'lbs x '+(s.r||'?')).join(' | ')+'\n';}
+          if(ex.note)t+='  Note: '+ex.note+'\n';
+        });
+        if(dy.wo.trainerNote)t+='\n  [Trainer notes: '+dy.wo.trainerNote+']\n';
+      });
+      t+='\nNUTRITION — Daily Averages\n'+'─'.repeat(38)+'\n';
+      const nd=days.filter(d=>d.nu&&d.nu.cal>0);
+      if(!nd.length)t+='No nutrition logged.\n';
+      else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length),hit=(v,t2)=>v>=t2?'[HIT]':'[MISS]';t+='Tracked: '+nd.length+'/7 days\nCalories: '+avg('cal')+' / 2100   '+hit(avg('cal'),TARGETS.cal)+'\nProtein:  '+avg('prot')+'g / 200g   '+hit(avg('prot'),TARGETS.prot)+'\nFat:      '+avg('fat')+'g / 65g\nCarbs:    '+avg('carbs')+'g / 220g\nSteps:    '+avg('steps')+' / 8000   '+hit(avg('steps'),TARGETS.steps)+'\n';}
+      t+='\nWEIGHT\n'+'─'.repeat(38)+'\n';
+      const wtd=days.filter(d=>d.wt!=null);
+      if(!wtd.length)t+='No weigh-ins logged.\n';
+      else{const ws=wtd.map(d=>d.wt);t+='Logged: '+wtd.length+'/7\nLow: '+Math.min(...ws)+' lbs  |  High: '+Math.max(...ws)+' lbs\n7-day avg: '+(ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(1)+' lbs\n';wtd.forEach(d=>{t+='  '+d.d+': '+d.wt+' lbs\n';});}
+      const wm=allMS().filter(({date})=>date>=mn&&date<=addD(mn,6));
+      if(wm.length){t+='\nBODY MEASUREMENTS\n'+'─'.repeat(38)+'\n';wm.forEach(({date,data})=>{t+=fmt(date)+'\n';MF.forEach(f=>{if(data[f.k])t+='  '+f.l+': '+data[f.k]+'"\n';});});}
+      t+='\n'+'='.repeat(40)+'\nHOW TO USE: Open a new Claude chat in your ACT project,\ntype "Weekly check-in" and paste this report.\n'+'='.repeat(40)+'\n';
+    } else {
+      document.getElementById('sumttl').textContent='Client Report';
+      const wd=days.filter(d=>d.wo),nd=days.filter(d=>d.nu&&d.nu.cal>0),wtd=days.filter(d=>d.wt!=null);
+      const pg=getProg(),planned=DK.filter(k=>pg[k]&&pg[k].exercises&&pg[k].exercises.length).length;
+      t='Hey '+name+', here\'s your week:\n\n';
+      t+='WORKOUTS\n'+'─'.repeat(38)+'\n';
+      t+='You completed '+wd.length+' of '+planned+' planned sessions this week.\n';
+      if(wd.length){t+='\n';wd.forEach(dy=>{t+=DAYS[dow(dy.d)]+': '+dy.wo.prog+'\n';dy.wo.exs.forEach(ex=>{const lg=ex.sets.filter(s=>s.w||s.r||s.done);if(lg.length)t+='  · '+ex.name+'\n';});t+='\n';});}
+      t+='NUTRITION\n'+'─'.repeat(38)+'\n';
+      if(!nd.length)t+='No nutrition logged this week.\n\n';
+      else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length);t+='Average calories: '+avg('cal')+' / '+TARGETS.cal+' goal\nAverage protein: '+avg('prot')+'g / '+TARGETS.prot+'g goal\nSteps: '+avg('steps')+' average daily\n\n';}
+      t+='WEIGHT\n'+'─'.repeat(38)+'\n';
+      if(!wtd.length)t+='No weigh-ins logged this week.\n\n';
+      else{const ws=wtd.map(d=>d.wt),first=ws[0],last=ws[ws.length-1],diff=+(last-first).toFixed(1);t+='Started the week at '+first+' lbs, ended at '+last+' lbs.\nTrend: '+(Math.abs(diff)<0.5?'Steady':(diff<0?'Down '+Math.abs(diff)+' lbs':'Up '+diff+' lbs'))+'\n\n';}
+      t+='GREAT WORK THIS WEEK. See you next session.\n— Antonio\n';
+    }
+    document.getElementById('sumtxt').value=t;
+    document.getElementById('sumout').style.display='block';
+    b1.disabled=false;b2.disabled=false;
   },300);
 }
 function copySum(){const t=document.getElementById('sumtxt').value;navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById('cpbtn');b.textContent='Copied!';b.style.color='var(--green)';setTimeout(()=>{b.textContent='Copy';b.style.color='';},2500);}).catch(()=>{document.getElementById('sumtxt').select();document.execCommand('copy');});}
 
-function init(){getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();}
+function init(){
+  cid=DB.get('act:active')||null;
+  // validate cid still exists in client list
+  if(cid&&!getClients().find(c=>c.id===cid))cid=null;
+  rCsel();
+  updDates();
+  document.getElementById('tbadge').textContent=tstr();
+  document.getElementById('mdate').value=tstr();
+  if(cid)rTrain();
+  else document.getElementById('tbody').innerHTML=noClientHTML();
+}
 init();
 </script>
 </body>
