@@ -169,7 +169,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:flex-end">
           <div><div class="lbl">Calories Remaining</div><div class="cr gd" id="crem">2100</div><div style="font-size:11px;color:var(--text3);margin-top:2px">kcal left today</div></div>
-          <div style="text-align:right"><div style="font-size:11px;color:var(--text3)">eaten</div><div id="ceat" style="font-family:var(--mono);font-size:22px">0</div><div style="font-size:11px;color:var(--text3);margin-top:2px">goal: 2,100</div></div>
+          <div style="text-align:right"><div style="font-size:11px;color:var(--text3)">eaten</div><div id="ceat" style="font-family:var(--mono);font-size:22px">0</div><div id="calgoal" style="font-size:11px;color:var(--text3);margin-top:2px">goal: 2,100</div></div>
         </div>
         <div class="bw"><div class="bf" id="calbar" style="width:0%"></div></div>
       </div>
@@ -199,6 +199,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
         <div style="font-size:12px;color:var(--text2);line-height:1.65;margin-bottom:14px">Build this client's program from scratch. Each day is independent. <span style="color:var(--text3)">Logged workout data is never touched.</span></div>
         <div class="pdtabs" id="pdtabs"></div>
       </div>
+      <div id="nutargets"></div>
       <div id="peditor"></div>
       <div class="card" id="progfooter" style="display:none"><button class="bgh" style="width:100%;margin-bottom:8px" onclick="clearProg()">✕ Clear This Day's Exercises</button><div style="font-size:10px;color:var(--text3);text-align:center">Removes all exercises for this day. Logged data is kept.</div></div>
     </div>
@@ -239,9 +240,9 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <div id="toast"></div>
 
 <script>
-const TARGETS={cal:2100,prot:200,fat:65,carbs:220,fiber:30,steps:8000};
+const DEFAULT_TARGETS={cal:2100,prot:200,fat:65,carbs:220,fiber:30,steps:8000};
 const MF=[{k:'waist',l:'Waist'},{k:'neck',l:'Neck'},{k:'chest',l:'Chest'},{k:'shoulders',l:'Shoulders'},{k:'bicep',l:'Bicep (flexed)'},{k:'thigh',l:'Thigh (widest)'},{k:'calf',l:'Calf (widest)'}];
-const MDS=[{k:'prot',l:'Protein',t:200,u:'g',c:'var(--acc)'},{k:'fat',l:'Fat',t:65,u:'g',c:'#a78bfa'},{k:'carbs',l:'Carbs',t:220,u:'g',c:'#38bdf8'},{k:'fiber',l:'Fiber',t:30,u:'g',c:'var(--green)'}];
+const MDS=[{k:'prot',l:'Protein',u:'g',c:'var(--acc)'},{k:'fat',l:'Fat',u:'g',c:'#a78bfa'},{k:'carbs',l:'Carbs',u:'g',c:'#38bdf8'},{k:'fiber',l:'Fiber',u:'g',c:'var(--green)'}];
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DK=[1,3,5];const DL={1:'Monday',3:'Wednesday',5:'Friday'};
@@ -282,6 +283,9 @@ function setWT(d,v){DB.set(ck('wt:'+d),v);}
 function getMS(d){return DB.get(ck('ms:'+d));}
 function setMS(d,v){DB.set(ck('ms:'+d),v);}
 function allMS(){const p=ck('ms:');return DB.keys(p).sort().reverse().map(k=>({date:k.slice(p.length),data:DB.get(k)}));}
+function getTargets(){if(!cid)return DEFAULT_TARGETS;const s=DB.get(ck('targets'));return s?{...DEFAULT_TARGETS,...s}:DEFAULT_TARGETS;}
+function setTarget(k,v){if(!cid)return;const t=DB.get(ck('targets'))||{};t[k]=v;DB.set(ck('targets'),t);}
+function updTarget(k,v){setTarget(k,parseFloat(v)||0);}
 
 function rCsel(){
   const clients=getClients(),sel=document.getElementById('csdrop');
@@ -401,12 +405,13 @@ function saveTrainerNote(val){const wo=getWO(cdate);if(!wo)return;wo.trainerNote
 /* ── EAT ── */
 function rEat(){
   if(!cid){document.getElementById('mgrid').innerHTML='';document.getElementById('nuinp').innerHTML=noClientHTML();document.getElementById('crem').textContent='—';document.getElementById('crem').className='cr';document.getElementById('ceat').textContent='—';document.getElementById('calbar').style.width='0%';return;}
-  const nu=getNU(cdate);updCal(nu);
-  document.getElementById('mgrid').innerHTML=MDS.map(m=>{const v=nu[m.k]||0,p=clamp(Math.round(v/m.t*100),0,100),ov=v>m.t;return '<div class="mcard"><div class="lbl">'+m.l+'</div><div class="mv'+(ov?' ov':'')+'">'+v+'<span style="font-size:11px;color:var(--text3);margin-left:2px">'+m.u+'</span></div><div class="bw"><div class="bf'+(ov?' ov':'')+'" style="width:'+p+'%;background:'+(ov?'var(--red)':m.c)+'"></div></div><div class="mp">'+p+'% of '+m.t+m.u+'</div></div>';}).join('');
-  const fl=[{k:'cal',l:'Calories',t:2100,u:'kcal',s:'1'},{k:'prot',l:'Protein',t:200,u:'g',s:'1'},{k:'fat',l:'Fat',t:65,u:'g',s:'1'},{k:'carbs',l:'Carbs',t:220,u:'g',s:'1'},{k:'fiber',l:'Fiber',t:30,u:'g',s:'1'},{k:'steps',l:'Steps',t:8000,u:'',s:'100'}];
-  document.getElementById('nuinp').innerHTML='<div class="lbl" style="margin-bottom:10px">Log Your Intake</div>'+fl.map(f=>'<div style="margin-bottom:10px"><div class="lbl">'+f.l+' <span style="color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0;font-size:10px">/ '+f.t+f.u+'</span></div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" step="'+f.s+'" value="'+(nu[f.k]||'')+'" placeholder="0" oninput="saveNF(\''+f.k+'\',this.value)"/></div>').join('');
+  const nu=getNU(cdate),tg=getTargets();updCal(nu);
+  document.getElementById('mgrid').innerHTML=MDS.map(m=>{const t=tg[m.k],v=nu[m.k]||0,p=clamp(Math.round(v/t*100),0,100),ov=v>t;return '<div class="mcard"><div class="lbl">'+m.l+'</div><div class="mv'+(ov?' ov':'')+'">'+v+'<span style="font-size:11px;color:var(--text3);margin-left:2px">'+m.u+'</span></div><div class="bw"><div class="bf'+(ov?' ov':'')+'" style="width:'+p+'%;background:'+(ov?'var(--red)':m.c)+'"></div></div><div class="mp">'+p+'% of '+t+m.u+'</div></div>';}).join('');
+  const fl=[{k:'cal',l:'Calories',u:'kcal',s:'1'},{k:'prot',l:'Protein',u:'g',s:'1'},{k:'fat',l:'Fat',u:'g',s:'1'},{k:'carbs',l:'Carbs',u:'g',s:'1'},{k:'fiber',l:'Fiber',u:'g',s:'1'},{k:'steps',l:'Steps',u:'',s:'100'}];
+  document.getElementById('nuinp').innerHTML='<div class="lbl" style="margin-bottom:10px">Log Your Intake</div>'+fl.map(f=>'<div style="margin-bottom:10px"><div class="lbl">'+f.l+' <span style="color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0;font-size:10px">/ '+tg[f.k]+f.u+'</span></div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" step="'+f.s+'" value="'+(nu[f.k]||'')+'" placeholder="0" oninput="saveNF(\''+f.k+'\',this.value)"/></div>').join('');
+  const cg=document.getElementById('calgoal');if(cg)cg.textContent='goal: '+tg.cal.toLocaleString();
 }
-function updCal(nu){const e=nu.cal||0,r=TARGETS.cal-e,p=clamp(Math.round(e/TARGETS.cal*100),0,100);const re=document.getElementById('crem');re.textContent=r;re.className='cr '+(r<0?'ov':r<300?'wn':'gd');document.getElementById('ceat').textContent=e;const b=document.getElementById('calbar');b.style.width=p+'%';b.className='bf'+(e>TARGETS.cal?' ov':'');}
+function updCal(nu){const tg=getTargets(),e=nu.cal||0,r=tg.cal-e,p=clamp(Math.round(e/tg.cal*100),0,100);const re=document.getElementById('crem');re.textContent=r;re.className='cr '+(r<0?'ov':r<300?'wn':'gd');document.getElementById('ceat').textContent=e;const b=document.getElementById('calbar');b.style.width=p+'%';b.className='bf'+(e>tg.cal?' ov':'');}
 function saveNF(k,v){const nu=getNU(cdate);nu[k]=parseFloat(v)||0;setNU(cdate,nu);updCal(nu);}
 
 /* ── MEASURE ── */
@@ -430,8 +435,10 @@ function saveM(){const d=document.getElementById('mdate').value,data={};MF.forEa
 
 /* ── PROGRAM ── */
 function rProg(){
-  const pf=document.getElementById('progfooter');
-  if(!cid){document.getElementById('pdtabs').innerHTML='';document.getElementById('peditor').innerHTML=noClientHTML();pf.style.display='none';return;}
+  const pf=document.getElementById('progfooter'),nt=document.getElementById('nutargets');
+  if(!cid){nt.innerHTML='';document.getElementById('pdtabs').innerHTML='';document.getElementById('peditor').innerHTML=noClientHTML();pf.style.display='none';return;}
+  const tg=getTargets();
+  nt.innerHTML='<div class="card" style="margin-bottom:10px"><div class="lbl" style="margin-bottom:10px">Nutrition Targets</div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+[{k:'cal',l:'Calories',u:'kcal'},{k:'prot',l:'Protein',u:'g'},{k:'fat',l:'Fat',u:'g'},{k:'carbs',l:'Carbs',u:'g'},{k:'fiber',l:'Fiber',u:'g'},{k:'steps',l:'Steps',u:'steps'}].map(f=>'<div><div class="lbl">'+f.l+'<span style="color:var(--text3);font-weight:normal;text-transform:none;letter-spacing:0;font-size:10px"> ('+f.u+')</span></div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+tg[f.k]+'" placeholder="'+DEFAULT_TARGETS[f.k]+'" oninput="updTarget(\''+f.k+'\',this.value)"/></div>').join('')+'</div></div>';
   document.getElementById('pdtabs').innerHTML=DK.map(k=>'<button class="pdt'+(apd===k?' on':'')+'" onclick="setPD('+k+')">'+DL[k].slice(0,3)+'</button>').join('');
   pf.style.display='block';
   rPE();
@@ -456,7 +463,7 @@ function genSum(mode){
   const b1=document.getElementById('genbtn'),b2=document.getElementById('genbtn2');
   b1.disabled=true;b2.disabled=true;
   setTimeout(()=>{
-    const mn=monOf(cdate),days=[],name=clientName();
+    const mn=monOf(cdate),days=[],name=clientName(),tg=getTargets();
     for(let i=0;i<7;i++){const d=addD(mn,i);days.push({d,wo:getWO(d),nu:getNU(d),wt:getWT(d)});}
     let t='';
     if(mode==='ai'){
@@ -477,7 +484,7 @@ function genSum(mode){
       t+='\nNUTRITION — Daily Averages\n'+'─'.repeat(38)+'\n';
       const nd=days.filter(d=>d.nu&&d.nu.cal>0);
       if(!nd.length)t+='No nutrition logged.\n';
-      else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length),hit=(v,t2)=>v>=t2?'[HIT]':'[MISS]';t+='Tracked: '+nd.length+'/7 days\nCalories: '+avg('cal')+' / 2100   '+hit(avg('cal'),TARGETS.cal)+'\nProtein:  '+avg('prot')+'g / 200g   '+hit(avg('prot'),TARGETS.prot)+'\nFat:      '+avg('fat')+'g / 65g\nCarbs:    '+avg('carbs')+'g / 220g\nSteps:    '+avg('steps')+' / 8000   '+hit(avg('steps'),TARGETS.steps)+'\n';}
+      else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length),hit=(v,t2)=>v>=t2?'[HIT]':'[MISS]';t+='Tracked: '+nd.length+'/7 days\nCalories: '+avg('cal')+' / '+tg.cal+'   '+hit(avg('cal'),tg.cal)+'\nProtein:  '+avg('prot')+'g / '+tg.prot+'g   '+hit(avg('prot'),tg.prot)+'\nFat:      '+avg('fat')+'g / '+tg.fat+'g\nCarbs:    '+avg('carbs')+'g / '+tg.carbs+'g\nSteps:    '+avg('steps')+' / '+tg.steps+'   '+hit(avg('steps'),tg.steps)+'\n';}
       t+='\nWEIGHT\n'+'─'.repeat(38)+'\n';
       const wtd=days.filter(d=>d.wt!=null);
       if(!wtd.length)t+='No weigh-ins logged.\n';
@@ -495,7 +502,7 @@ function genSum(mode){
       if(wd.length){t+='\n';wd.forEach(dy=>{t+=DAYS[dow(dy.d)]+': '+dy.wo.prog+'\n';dy.wo.exs.forEach(ex=>{const lg=ex.sets.filter(s=>s.w||s.r||s.done);if(lg.length)t+='  · '+ex.name+'\n';});t+='\n';});}
       t+='NUTRITION\n'+'─'.repeat(38)+'\n';
       if(!nd.length)t+='No nutrition logged this week.\n\n';
-      else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length);t+='Average calories: '+avg('cal')+' / '+TARGETS.cal+' goal\nAverage protein: '+avg('prot')+'g / '+TARGETS.prot+'g goal\nSteps: '+avg('steps')+' average daily\n\n';}
+      else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length);t+='Average calories: '+avg('cal')+' / '+tg.cal+' goal\nAverage protein: '+avg('prot')+'g / '+tg.prot+'g goal\nSteps: '+avg('steps')+' average daily\n\n';}
       t+='WEIGHT\n'+'─'.repeat(38)+'\n';
       if(!wtd.length)t+='No weigh-ins logged this week.\n\n';
       else{const ws=wtd.map(d=>d.wt),first=ws[0],last=ws[ws.length-1],diff=+(last-first).toFixed(1);t+='Started the week at '+first+' lbs, ended at '+last+' lbs.\nTrend: '+(Math.abs(diff)<0.5?'Steady':(diff<0?'Down '+Math.abs(diff)+' lbs':'Up '+diff+' lbs'))+'\n\n';}
