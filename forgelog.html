@@ -202,6 +202,15 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">3</div><span style="font-size:12px;color:var(--text2)">Open a new Claude chat in your ForgeLog project</span></div>
           <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">4</div><span style="font-size:12px;color:var(--text2)">Type "Weekly check-in" and paste the report</span></div>
         </div>
+        <div style="margin-bottom:14px">
+          <div class="lbl" style="margin-bottom:8px">Weekly Subjective</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
+            <div><div class="lbl">Energy (1–10)</div><input class="inp" id="si-energy" type="number" inputmode="numeric" pattern="[0-9]*" min="1" max="10" placeholder="7"/></div>
+            <div><div class="lbl">Sleep avg (hrs)</div><input class="inp" id="si-sleep" type="number" inputmode="numeric" pattern="[0-9]*" step="0.5" placeholder="7.5"/></div>
+          </div>
+          <div style="margin-bottom:8px"><div class="lbl">Chest strain</div><input class="inp" id="si-chest" type="text" placeholder="improving / same / worse"/></div>
+          <div><div class="lbl">General notes</div><textarea class="inp" id="si-notes" rows="2" placeholder="How did the week feel overall?"></textarea></div>
+        </div>
         <button class="bacc" id="genbtn" onclick="genSum()" style="width:100%;padding:14px;font-family:var(--display);font-size:20px;letter-spacing:2px">GENERATE SUMMARY</button>
       </div>
       <div class="card" id="sumout" style="display:none">
@@ -263,7 +272,7 @@ const MF=[{k:'waist',l:'Waist'},{k:'neck',l:'Neck'},{k:'chest',l:'Chest'},{k:'sh
 const MDS=[{k:'prot',l:'Protein',t:200,u:'g',c:'var(--acc)'},{k:'fat',l:'Fat',t:65,u:'g',c:'#a78bfa'},{k:'carbs',l:'Carbs',t:220,u:'g',c:'#38bdf8'},{k:'fiber',l:'Fiber',t:30,u:'g',c:'var(--green)'}];
 const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const DK=[1,3,5];const DL={1:'Monday',3:'Wednesday',5:'Friday'};
+const DK=[1,2,3,4,5,6,0];const DL={0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
 
 let cdate=tstr(),tiv=null,tsec=0,ttot=0,eset=null,apd=1,openSN=new Set();
 
@@ -293,6 +302,15 @@ function setWT(d,v){DB.set('wt:'+d,v);}
 function getMS(d){return DB.get('ms:'+d);}
 function setMS(d,v){DB.set('ms:'+d,v);}
 function allMS(){return DB.keys('ms:').sort().reverse().map(k=>({date:k.slice(3),data:DB.get(k)}));}
+function getPosture(d){return DB.get('posture:'+d)||false;}
+function setPosture(d,v){DB.set('posture:'+d,v);}
+function togPosture(d){setPosture(d,!getPosture(d));rTrain();}
+function rPostureCard(){
+  const mon=monOf(cdate),today=tstr();
+  let h='<div class="card" style="margin-bottom:8px"><div class="lbl" style="margin-bottom:6px">Posture Work This Week</div><div style="display:flex;gap:4px">';
+  for(let i=0;i<7;i++){const d=addD(mon,i),dy=DAYS[dow(d)].slice(0,2),dn=getPosture(d),it=d===today;h+='<div style="flex:1;text-align:center"><div style="font-family:var(--mono);font-size:8px;color:'+(it?'var(--acc)':'var(--text3)')+';margin-bottom:3px">'+dy+'</div><button onclick="togPosture(\''+d+'\')" style="width:100%;height:30px;border-radius:var(--rsm);font-size:13px;background:'+(dn?'var(--green-bg)':'var(--bg3)')+';border:.5px solid '+(dn?'var(--green-border)':'var(--border2)')+';color:'+(dn?'var(--green)':'var(--text3)')+'">'+( dn?'✓':'○')+'</button></div>';}
+  h+='</div></div>';return h;
+}
 
 function toast(msg){const e=document.getElementById('toast');e.textContent=msg;e.classList.add('on');setTimeout(()=>e.classList.remove('on'),2000);}
 
@@ -324,15 +342,17 @@ function updDates(){const l=fmt(cdate);document.getElementById('tbadge').textCon
 /* TRAIN */
 function rTrain(){
   const pg=getProg()[dow(cdate)],body=document.getElementById('tbody'),sub=document.getElementById('tds');
-  if(!pg){sub.textContent='REST DAY';sub.className='dsub rst';body.innerHTML='<div style="text-align:center;padding:50px 20px"><div style="font-family:var(--display);font-size:32px;letter-spacing:3px;margin-bottom:8px">Rest Day</div><div style="font-size:13px;color:var(--text2);line-height:1.7">Recovery is where growth happens.</div><div style="font-size:11px;color:var(--text3);margin-top:8px">Do your daily corrective block.<br/>Chin tucks · Dead bugs · Thoracic extension · Wall reset</div></div>';return;}
+  const pc=rPostureCard();
+  if(!pg){sub.textContent='REST DAY';sub.className='dsub rst';body.innerHTML=pc+'<div style="text-align:center;padding:50px 20px"><div style="font-family:var(--display);font-size:32px;letter-spacing:3px;margin-bottom:8px">Rest Day</div><div style="font-size:13px;color:var(--text2);line-height:1.7">Recovery is where growth happens.</div><div style="font-size:11px;color:var(--text3);margin-top:8px">Do your daily corrective block.<br/>Chin tucks · Dead bugs · Thoracic extension · Wall reset</div></div>';return;}
   sub.textContent=pg.name+' DAY';sub.className='dsub';
   const wo=getWO(cdate);
-  if(!wo){body.innerHTML='<div class="card" style="text-align:center;padding:24px 16px 32px"><div style="font-family:var(--display);font-size:28px;letter-spacing:2px;margin-bottom:6px">'+pg.name+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:28px">'+pg.exercises.length+' exercises</div><button class="bacc" style="font-family:var(--display);font-size:22px;letter-spacing:3px;padding:16px 50px;border-radius:var(--r)" onclick="startWO()">START WORKOUT</button></div>';return;}
-  let h='<div class="card"><div class="lbl" style="margin-bottom:8px">Quick Rest Timer</div><div class="tq">'+[[60,'1m'],[90,'1:30'],[120,'2m'],[180,'3m']].map(([s,l])=>'<button data-s="'+s+'" onclick="startTimer('+s+')">'+l+'</button>').join('')+'</div></div>';
+  if(!wo){body.innerHTML=pc+'<div class="card" style="text-align:center;padding:24px 16px 32px"><div style="font-family:var(--display);font-size:28px;letter-spacing:2px;margin-bottom:6px">'+pg.name+'</div><div style="font-size:13px;color:var(--text2);margin-bottom:28px">'+pg.exercises.length+' exercises</div><button class="bacc" style="font-family:var(--display);font-size:22px;letter-spacing:3px;padding:16px 50px;border-radius:var(--r)" onclick="startWO()">START WORKOUT</button></div>';return;}
+  let h=pc+'<div class="card"><div class="lbl" style="margin-bottom:8px">Quick Rest Timer</div><div class="tq">'+[[60,'1m'],[90,'1:30'],[120,'2m'],[180,'3m']].map(([s,l])=>'<button data-s="'+s+'" onclick="startTimer('+s+')">'+l+'</button>').join('')+'</div></div>';
   wo.exs.forEach((ex,ei)=>{
     const pr=pg.exercises[ei]||{},ad=ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r));
     h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="Notes, cues, how it felt..." oninput="updExNote('+ei+',this.value)">'+(ex.note?ex.note.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):'')+'</textarea></div></div>';
   });
+  h+='<div class="card" style="margin-top:4px"><div class="lbl" style="margin-bottom:4px">Workout Note</div><textarea class="inp" rows="2" placeholder="Overall session notes..." oninput="updWONote(this.value)">'+(wo.note?(wo.note+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</textarea></div>';
   body.innerHTML=h;
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',tiv&&parseInt(b.dataset.s)===ttot));
 }
@@ -354,6 +374,7 @@ function addSet(ei){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets.push({w:
 function updExNote(ei,val){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].note=val;setWO(cdate,wo);}
 function togSetNote(ei,si){const key=ei+'-'+si,el=document.getElementById('sn-'+ei+'-'+si);if(!el)return;if(openSN.has(key)){openSN.delete(key);el.style.display='none';}else{openSN.add(key);el.style.display='block';el.querySelector('input')?.focus();}}
 function saveSetNote(ei,si,val){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets[si].note=val;setWO(cdate,wo);}
+function updWONote(val){const wo=getWO(cdate);if(!wo)return;wo.note=val;setWO(cdate,wo);}
 
 /* EAT */
 function rEat(){
@@ -390,15 +411,14 @@ function rProg(){
 }
 function setPD(k){apd=k;rProg();}
 function rPE(){
-  const prog=getProg(),day=prog[apd];
-  if(!day){document.getElementById('peditor').innerHTML='<div class="card" style="text-align:center;padding:30px;color:var(--text3)">No program for this day.</div>';return;}
+  const prog=getProg(),day=prog[apd]||{name:DL[apd],exercises:[]};
   let h=day.exercises.map((ex,ei)=>'<div class="pecard" id="pe-'+ei+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--text3)">Exercise '+(ei+1)+'</span><button class="debtn" onclick="delEx('+ei+')">Remove</button></div><div style="margin-bottom:8px"><div class="lbl">Name</div><input class="inp" value="'+ex.name.replace(/"/g,'&quot;')+'" placeholder="Exercise name" oninput="updEX('+ei+',\'name\',this.value)"/></div><div class="fr"><div class="fg"><div class="lbl">Sets</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.sets+'" placeholder="3" oninput="updEX('+ei+',\'sets\',parseInt(this.value)||1)" style="text-align:center"/></div><div class="fg"><div class="lbl">Reps</div><input class="inp" value="'+ex.reps.replace(/"/g,'&quot;')+'" placeholder="8-12" oninput="updEX('+ei+',\'reps\',this.value)"/></div><div class="fg"><div class="lbl">Rest(s)</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.rest+'" placeholder="90" oninput="updEX('+ei+',\'rest\',parseInt(this.value)||0)" style="text-align:center"/></div></div><div><div class="lbl">Notes / Cues</div><textarea class="inp" rows="2" placeholder="Form cues, pairing info..." oninput="updEX('+ei+',\'note\',this.value)">'+(ex.note||'')+'</textarea></div></div>').join('');
   h+='<button class="aebtn" onclick="addEx()">+ Add Exercise</button>';
   document.getElementById('peditor').innerHTML=h;
 }
 function updEX(ei,field,val){const p=getProg();p[apd].exercises[ei][field]=val;setProg(p);}
 function delEx(ei){if(!confirm('Remove this exercise?'))return;const p=getProg();p[apd].exercises.splice(ei,1);setProg(p);rPE();toast('Exercise removed');}
-function addEx(){const p=getProg();p[apd].exercises.push({id:uid(),name:'New Exercise',sets:3,reps:'8-12',rest:90,note:''});setProg(p);rPE();setTimeout(()=>document.getElementById('peditor').lastElementChild?.scrollIntoView({behavior:'smooth'}),100);toast('Exercise added');}
+function addEx(){const p=getProg();if(!p[apd])p[apd]={name:DL[apd],exercises:[]};p[apd].exercises.push({id:uid(),name:'New Exercise',sets:3,reps:'8-12',rest:90,note:''});setProg(p);rPE();setTimeout(()=>document.getElementById('peditor').lastElementChild?.scrollIntoView({behavior:'smooth'}),100);toast('Exercise added');}
 function resetProg(){if(!confirm('Reset to default program? All logged data is kept.'))return;setProg(JSON.parse(JSON.stringify(DEFAULT_PROGRAM)));rPE();toast('Reset to defaults');}
 
 /* SUMMARY */
@@ -406,18 +426,37 @@ function genSum(){
   const btn=document.getElementById('genbtn');btn.textContent='GENERATING...';btn.disabled=true;
   setTimeout(()=>{
     const mn=monOf(cdate),days=[];
-    for(let i=0;i<7;i++){const d=addD(mn,i);days.push({d,wo:getWO(d),nu:getNU(d),wt:getWT(d)});}
+    for(let i=0;i<7;i++){const d=addD(mn,i);days.push({d,wo:getWO(d),nu:getNU(d),wt:getWT(d),pt:getPosture(d)});}
+    const wd=days.filter(d=>d.wo),nd=days.filter(d=>d.nu&&d.nu.cal>0),wtd=days.filter(d=>d.wt!=null),ptd=days.filter(d=>d.pt);
+    const pg2=getProg(),plannedDays=[0,1,2,3,4,5,6].filter(k=>pg2[k]&&pg2[k].exercises&&pg2[k].exercises.length).length;
+    const energy=(document.getElementById('si-energy')?.value||'').trim();
+    const sleep=(document.getElementById('si-sleep')?.value||'').trim();
+    const chest=(document.getElementById('si-chest')?.value||'').trim();
+    const snotes=(document.getElementById('si-notes')?.value||'').trim();
     let t='WEEKLY TRAINER CHECK-IN\nWeek of '+mn+'\n'+'='.repeat(40)+'\n\n';
-    t+='WORKOUTS\n'+'─'.repeat(38)+'\n';
-    const wd=days.filter(d=>d.wo);
+    t+='ADHERENCE & SUBJECTIVE\n'+'─'.repeat(38)+'\n';
+    t+='Workouts completed: '+wd.length+'/'+(plannedDays||3)+'\n';
+    t+='Food logged: '+nd.length+'/7 days\n';
+    t+='Weight logged: '+wtd.length+'/7 days\n';
+    t+='Posture work completed: '+ptd.length+'/7 days\n';
+    if(energy)t+='Energy rating (1-10): '+energy+'\n';
+    if(sleep)t+='Sleep avg (hrs): '+sleep+'\n';
+    if(chest)t+='Chest strain status: '+chest+'\n';
+    if(snotes)t+='General notes: '+snotes+'\n';
+    t+='\nWORKOUTS\n'+'─'.repeat(38)+'\n';
     if(!wd.length)t+='No workouts logged.\n';
-    else wd.forEach(dy=>{t+='\n'+DAYS[dow(dy.d)]+' '+dy.d+' — '+dy.wo.prog+'\n';dy.wo.exs.forEach(ex=>{const lg=ex.sets.filter(s=>s.w||s.r);if(lg.length){t+='  '+ex.name+'\n  '+lg.map(s=>(s.w||'?')+'lbs x '+(s.r||'?')).join(' | ')+'\n';}});});
+    else wd.forEach(dy=>{
+      t+='\n'+DAYS[dow(dy.d)]+' '+dy.d+' — '+dy.wo.prog+'\n';
+      dy.wo.exs.forEach(ex=>{
+        const lg=ex.sets.filter(s=>s.w||s.r);
+        if(lg.length){t+='  '+ex.name+'\n  '+lg.map(s=>(s.w||'?')+'lbs x '+(s.r||'?')).join(' | ')+'\n';if(ex.note&&ex.note.trim())t+='  Note: '+ex.note.trim()+'\n';}
+      });
+      if(dy.wo.note&&dy.wo.note.trim())t+='\n  Workout note: '+dy.wo.note.trim()+'\n';
+    });
     t+='\nNUTRITION — Daily Averages\n'+'─'.repeat(38)+'\n';
-    const nd=days.filter(d=>d.nu&&d.nu.cal>0);
     if(!nd.length)t+='No nutrition logged.\n';
     else{const avg=k=>Math.round(nd.reduce((s,d)=>s+(d.nu[k]||0),0)/nd.length),hit=(v,t2)=>v>=t2?'[HIT]':'[MISS]';t+='Tracked: '+nd.length+'/7 days\nCalories: '+avg('cal')+' / 2100   '+hit(avg('cal'),TARGETS.cal)+'\nProtein:  '+avg('prot')+'g / 200g   '+hit(avg('prot'),TARGETS.prot)+'\nFat:      '+avg('fat')+'g / 65g\nCarbs:    '+avg('carbs')+'g / 220g\nSteps:    '+avg('steps')+' / 8000   '+hit(avg('steps'),TARGETS.steps)+'\n';}
     t+='\nWEIGHT\n'+'─'.repeat(38)+'\n';
-    const wtd=days.filter(d=>d.wt!=null);
     if(!wtd.length)t+='No weigh-ins logged.\n';
     else{const ws=wtd.map(d=>d.wt);t+='Logged: '+wtd.length+'/7\nLow: '+Math.min(...ws)+' lbs  |  High: '+Math.max(...ws)+' lbs\n7-day avg: '+(ws.reduce((a,b)=>a+b,0)/ws.length).toFixed(1)+' lbs\n';wtd.forEach(d=>{t+='  '+d.d+': '+d.wt+' lbs\n';});}
     const wm=allMS().filter(({date})=>date>=mn&&date<=addD(mn,6));
