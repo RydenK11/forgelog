@@ -357,12 +357,24 @@ function rTrain(){
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',tiv&&parseInt(b.dataset.s)===ttot));
 }
 
+function prevSets(ei){
+  const d=dow(cdate);
+  const keys=DB.keys('wo:').filter(k=>{const dt=k.slice(3);return dt!==cdate&&dow(dt)===d;}).sort().reverse();
+  for(const k of keys){const wo=DB.get(k);if(wo&&wo.exs&&wo.exs[ei]&&wo.exs[ei].sets&&wo.exs[ei].sets.some(s=>s.w&&s.r))return wo.exs[ei].sets;}
+  return null;
+}
 function rSets(sets,ei,rest){
+  const prev=prevSets(ei);
   return sets.map((s,si)=>{
+    const ps=prev&&prev[si]&&prev[si].w&&prev[si].r?prev[si]:null;
     const isE=eset&&eset.ei===ei&&eset.si===si;
-    if(isE)return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.w||'')+'" placeholder="lbs" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.r||'')+'" placeholder="reps" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';
+    if(isE){const pw=ps?ps.w:'lbs',pr=ps?ps.r:'reps';return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="decimal" step="0.5" value="'+(s.w||'')+'" placeholder="'+pw+'" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.r||'')+'" placeholder="'+pr+'" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';}
     const hd=s.done||(s.w&&s.r),skey=ei+'-'+si,shown=!!(s.note)||openSN.has(skey),sntxt=s.note?(s.note+'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
-    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.w?s.w+' lbs':'— lbs')+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'" onclick="openEdit('+ei+','+si+')">'+(s.r?s.r+' reps':'— reps')+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
+    const wTxt=s.w?s.w+' lbs':(ps?'~'+ps.w+' lbs':'— lbs');
+    const rTxt=s.r?s.r+' reps':(ps?'~'+ps.r+' reps':'— reps');
+    const wSty=(!s.w&&ps)?' style="color:var(--text3)"':'';
+    const rSty=(!s.r&&ps)?' style="color:var(--text3)"':'';
+    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'"'+wSty+' onclick="openEdit('+ei+','+si+')">'+wTxt+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'"'+rSty+' onclick="openEdit('+ei+','+si+')">'+rTxt+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
   }).join('');
 }
 
