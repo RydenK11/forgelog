@@ -172,7 +172,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
           <div><div class="lbl">Today's Weight</div><div class="wb" id="wtd">—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span></div></div>
           <div style="text-align:right"><div class="lbl">7-Day Avg</div><div id="wavg" style="font-family:var(--mono);font-size:22px;color:var(--acc)">—</div><div style="font-size:10px;color:var(--text3)">lbs</div></div>
         </div>
-        <div class="row"><input class="inp" id="winp" type="number" inputmode="numeric" pattern="[0-9]*" step="0.1" placeholder="Enter weight (lbs)" style="flex:1"/><button class="bacc" onclick="logWt()">Log</button></div>
+        <div class="row"><input class="inp" id="winp" type="number" inputmode="decimal" step="0.1" placeholder="Enter weight (lbs)" style="flex:1"/><button class="bacc" onclick="logWt()">Log</button></div>
       </div>
       <div class="card"><div class="lbl" style="margin-bottom:10px">14-Day Trend</div><div class="cwrap" id="wchart"></div><div style="display:flex;justify-content:space-between" id="wlabels"></div></div>
       <div class="card">
@@ -368,7 +368,7 @@ function rSets(sets,ei,rest){
   return sets.map((s,si)=>{
     const ps=prev&&prev[si]&&prev[si].w&&prev[si].r?prev[si]:null;
     const isE=eset&&eset.ei===ei&&eset.si===si;
-    if(isE){const pw=ps?ps.w:'lbs',pr=ps?ps.r:'reps';return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="decimal" step="0.5" value="'+(s.w||'')+'" placeholder="'+pw+'" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.r||'')+'" placeholder="'+pr+'" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';}
+    if(isE){const pw=ps?ps.w:'lbs',pr=ps?ps.r:'reps';return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.w||'')+'" placeholder="'+pw+'" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.r||'')+'" placeholder="'+pr+'" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';}
     const hd=s.done||(s.w&&s.r),skey=ei+'-'+si,shown=!!(s.note)||openSN.has(skey),sntxt=s.note?(s.note+'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
     const wTxt=s.w?s.w+' lbs':(ps?'~'+ps.w+' lbs':'— lbs');
     const rTxt=s.r?s.r+' reps':(ps?'~'+ps.r+' reps':'— reps');
