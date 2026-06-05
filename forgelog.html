@@ -238,7 +238,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
     <div class="tab" id="tab-settings">
       <div class="card">
         <div style="font-family:var(--display);font-size:22px;letter-spacing:2px;margin-bottom:4px">Notifications</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Both are off by default. Enable below.<br/><span style="font-size:11px">Works when screen is locked or app is backgrounded. Swiped-away delivery on iOS requires a push server — not supported.</span></div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Both are off by default. Enable below.</div>
         <div class="tglwrap">
           <div><div style="font-size:13px;font-weight:600">Timer Notifications</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Alert when rest timer hits zero</div></div>
           <label class="tgl"><input type="checkbox" id="notif-timer" onchange="togNotif('fl:notif:timer',this.checked)"/><span class="tglslider"></span></label>
@@ -259,7 +259,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <div id="toast"></div>
 
 <script>
-const VERSION='1.3';
+const VERSION='1.5';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -538,7 +538,7 @@ function getNotifPref(key){return localStorage.getItem(key)==='true';}
 function togNotif(key,val){localStorage.setItem(key,val?'true':'false');}
 function testNotif(){
   if(!('Notification' in window)||Notification.permission!=='granted'){toast('Grant permission first');return;}
-  new Notification('ForgeLog Test',{body:'Notifications are working!'});
+  new Notification('ForgeLog',{body:'Notifications are working!'});
 }
 function reqNotif(){Notification.requestPermission().then(()=>rSettings());}
 function rSettings(){
