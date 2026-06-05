@@ -6,19 +6,25 @@ self.addEventListener('message', e => {
   if (e.data.type === 'TIMER_SCHEDULE') {
     const token = ++timerToken;
     const delay = Math.max(0, e.data.endTime - Date.now());
-    setTimeout(() => {
-      if (token !== timerToken) return; // was cancelled or restarted
-      self.registration.showNotification('Rest Over', {
-        body: 'Time to hit your next set.',
-        tag: 'rest-timer',
-        renotify: true,
-        vibrate: [200, 100, 200],
-        silent: false
-      });
-    }, delay);
+    // e.waitUntil keeps the SW alive until the Promise resolves —
+    // without this the OS suspends the worker seconds after the message.
+    e.waitUntil(
+      new Promise(resolve => {
+        setTimeout(() => {
+          if (token !== timerToken) { resolve(); return; }
+          self.registration.showNotification('Rest Over', {
+            body: 'Time to hit your next set.',
+            tag: 'rest-timer',
+            renotify: true,
+            vibrate: [200, 100, 200],
+            silent: false
+          }).then(resolve).catch(resolve);
+        }, delay);
+      })
+    );
   }
   if (e.data.type === 'TIMER_CANCEL') {
-    timerToken++; // invalidates any pending setTimeout
+    timerToken++;
   }
 });
 
