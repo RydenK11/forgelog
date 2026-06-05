@@ -238,7 +238,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
     <div class="tab" id="tab-settings">
       <div class="card">
         <div style="font-family:var(--display);font-size:22px;letter-spacing:2px;margin-bottom:4px">Notifications</div>
-        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Both are off by default. Enable below.<br/><span style="color:var(--text3);font-size:11px">Background delivery (app swiped away) requires iOS 16.4+ with Add to Home Screen, or Android Chrome.</span></div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Both are off by default. Enable below.<br/><span style="font-size:11px">Works when screen is locked or app is backgrounded. Swiped-away delivery on iOS requires a push server — not supported.</span></div>
         <div class="tglwrap">
           <div><div style="font-size:13px;font-weight:600">Timer Notifications</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Alert when rest timer hits zero</div></div>
           <label class="tgl"><input type="checkbox" id="notif-timer" onchange="togNotif('fl:notif:timer',this.checked)"/><span class="tglslider"></span></label>
@@ -259,7 +259,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <div id="toast"></div>
 
 <script>
-const VERSION='1.2';
+const VERSION='1.3';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -362,7 +362,7 @@ function startTimer(s){
   tiv=setInterval(()=>{
     const sl=Math.max(0,Math.round((timerEnd-Date.now())/1000));
     updTimer();
-    if(sl<=0){clearInterval(tiv);tiv=null;beep();if('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem('fl:notif:timer')==='true')new Notification('Rest Over',{body:'Time to hit your next set.',silent:false,tag:'rest-timer',renotify:true});setTimeout(()=>document.getElementById('tbar').classList.remove('on'),2500);}
+    if(sl<=0){clearInterval(tiv);tiv=null;beep();setTimeout(()=>document.getElementById('tbar').classList.remove('on'),2500);}
   },200);
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.s)===s));
 }
