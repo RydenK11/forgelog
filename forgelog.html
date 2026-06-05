@@ -108,6 +108,8 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 .fr{display:flex;gap:8px;margin-bottom:8px;}
 .fg{flex:1;}
 .debtn{background:rgba(239,68,68,.1);border:.5px solid rgba(239,68,68,.3);color:var(--red);border-radius:var(--rsm);padding:5px 10px;font-size:11px;}
+.mvbtn{background:var(--bg3);border:.5px solid var(--border2);color:var(--text2);border-radius:var(--rsm);padding:5px 8px;font-size:11px;}
+.mvbtn:disabled{opacity:.3;cursor:default;}
 .aebtn{width:100%;background:transparent;border:.5px dashed var(--border2);border-radius:var(--rsm);padding:10px;font-size:12px;color:var(--text3);margin-top:4px;}
 /* TOAST */
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 20px;font-size:13px;color:var(--text);opacity:0;transition:all .25s;z-index:999;pointer-events:none;white-space:nowrap;}
@@ -274,7 +276,7 @@ const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DK=[1,2,3,4,5,6,0];const DL={0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
 
-let cdate=tstr(),tiv=null,tsec=0,ttot=0,eset=null,apd=1,openSN=new Set();
+let cdate=tstr(),tiv=null,tsec=0,ttot=0,timerEnd=0,eset=null,apd=1,openSN=new Set(),woNotif=null;
 
 function tstr(){return new Date().toISOString().split('T')[0];}
 function pd(s){return new Date(s+'T12:00:00');}
@@ -317,13 +319,17 @@ function toast(msg){const e=document.getElementById('toast');e.textContent=msg;e
 function beep(){try{const c=new(window.AudioContext||window.webkitAudioContext)();[0,.18,.36].forEach(t=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=880;g.gain.setValueAtTime(.4,c.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,c.currentTime+t+.18);o.start(c.currentTime+t);o.stop(c.currentTime+t+.2);});}catch(e){}}
 
 function startTimer(s){
-  if(tiv)clearInterval(tiv);tsec=s;ttot=s;updTimer();
+  if(tiv)clearInterval(tiv);timerEnd=Date.now()+(s*1000);ttot=s;updTimer();
   document.getElementById('tbar').classList.add('on');
-  tiv=setInterval(()=>{tsec--;if(tsec<=0){tsec=0;clearInterval(tiv);tiv=null;beep();setTimeout(()=>document.getElementById('tbar').classList.remove('on'),2500);}updTimer();},1000);
+  tiv=setInterval(()=>{
+    const sl=Math.max(0,Math.round((timerEnd-Date.now())/1000));
+    updTimer();
+    if(sl<=0){clearInterval(tiv);tiv=null;beep();if('Notification' in window&&Notification.permission==='granted')new Notification('Rest Over',{body:'Time to go!'});setTimeout(()=>document.getElementById('tbar').classList.remove('on'),2500);}
+  },200);
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.s)===s));
 }
 function stopTimer(){if(tiv)clearInterval(tiv);tiv=null;document.getElementById('tbar').classList.remove('on');document.querySelectorAll('.tq button').forEach(b=>b.classList.remove('on'));}
-function updTimer(){const m=Math.floor(tsec/60),s=tsec%60;document.getElementById('tdis').textContent=m+':'+(String(s).padStart(2,'0'));document.getElementById('tpfill').style.width=(ttot>0?tsec/ttot*100:0)+'%';}
+function updTimer(){const sl=Math.max(0,Math.round((timerEnd-Date.now())/1000)),m=Math.floor(sl/60),s=sl%60;document.getElementById('tdis').textContent=m+':'+(String(s).padStart(2,'0'));document.getElementById('tpfill').style.width=(ttot>0?sl/ttot*100:0)+'%';}
 
 function sw(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
@@ -355,6 +361,7 @@ function rTrain(){
   h+='<div class="card" style="margin-top:4px"><div class="lbl" style="margin-bottom:4px">Workout Note</div><textarea class="inp" rows="2" placeholder="Overall session notes..." oninput="updWONote(this.value)">'+(wo.note?(wo.note+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</textarea></div>';
   body.innerHTML=h;
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',tiv&&parseInt(b.dataset.s)===ttot));
+  if(wo){const allDone=wo.exs.every(ex=>ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r)));if(allDone&&woNotif){woNotif.close();woNotif=null;}}
 }
 
 function prevSets(ei){
@@ -378,7 +385,17 @@ function rSets(sets,ei,rest){
   }).join('');
 }
 
-function startWO(){const pg=getProg()[dow(cdate)];if(!pg)return;const wo={prog:pg.name,started:new Date().toISOString(),exs:pg.exercises.map(e=>({id:e.id,name:e.name,sets:Array.from({length:e.sets},()=>({w:'',r:'',done:false}))}))};setWO(cdate,wo);rTrain();}
+function startWO(){
+  const pg=getProg()[dow(cdate)];if(!pg)return;
+  const wo={prog:pg.name,started:new Date().toISOString(),exs:pg.exercises.map(e=>({id:e.id,name:e.name,sets:Array.from({length:e.sets},()=>({w:'',r:'',done:false}))}))};
+  setWO(cdate,wo);
+  if('Notification' in window){
+    const fire=()=>{if(woNotif)woNotif.close();woNotif=new Notification('ForgeLog',{body:'Workout in progress — tap to return',requireInteraction:true});};
+    if(Notification.permission==='granted')fire();
+    else if(Notification.permission==='default')Notification.requestPermission().then(p=>{if(p==='granted')fire();});
+  }
+  rTrain();
+}
 function openEdit(ei,si){eset={ei,si};const wo=getWO(cdate),pg=getProg()[dow(cdate)],sd=document.getElementById('sets-'+ei);if(sd&&wo&&pg){sd.innerHTML=rSets(wo.exs[ei].sets,ei,pg.exercises[ei]?.rest||0);document.getElementById('ew')?.focus();}}
 function confEdit(ei,si){const wo=getWO(cdate);if(!wo)return;const w=document.getElementById('ew')?.value||'',r=document.getElementById('er')?.value||'';wo.exs[ei].sets[si]={...wo.exs[ei].sets[si],w,r,done:!!(w&&r)};setWO(cdate,wo);eset=null;rTrain();}
 function togDone(ei,si){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets[si].done=!wo.exs[ei].sets[si].done;setWO(cdate,wo);rTrain();}
@@ -424,11 +441,12 @@ function rProg(){
 function setPD(k){apd=k;rProg();}
 function rPE(){
   const prog=getProg(),day=prog[apd]||{name:DL[apd],exercises:[]};
-  let h=day.exercises.map((ex,ei)=>'<div class="pecard" id="pe-'+ei+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--text3)">Exercise '+(ei+1)+'</span><button class="debtn" onclick="delEx('+ei+')">Remove</button></div><div style="margin-bottom:8px"><div class="lbl">Name</div><input class="inp" value="'+ex.name.replace(/"/g,'&quot;')+'" placeholder="Exercise name" oninput="updEX('+ei+',\'name\',this.value)"/></div><div class="fr"><div class="fg"><div class="lbl">Sets</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.sets+'" placeholder="3" oninput="updEX('+ei+',\'sets\',parseInt(this.value)||1)" style="text-align:center"/></div><div class="fg"><div class="lbl">Reps</div><input class="inp" value="'+ex.reps.replace(/"/g,'&quot;')+'" placeholder="8-12" oninput="updEX('+ei+',\'reps\',this.value)"/></div><div class="fg"><div class="lbl">Rest(s)</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.rest+'" placeholder="90" oninput="updEX('+ei+',\'rest\',parseInt(this.value)||0)" style="text-align:center"/></div></div><div><div class="lbl">Notes / Cues</div><textarea class="inp" rows="2" placeholder="Form cues, pairing info..." oninput="updEX('+ei+',\'note\',this.value)">'+(ex.note||'')+'</textarea></div></div>').join('');
+  let h=day.exercises.map((ex,ei)=>'<div class="pecard" id="pe-'+ei+'"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px"><span style="font-size:11px;color:var(--text3)">Exercise '+(ei+1)+'</span><div style="display:flex;gap:4px;align-items:center"><button class="mvbtn" onclick="mvEx('+ei+',-1)"'+(ei===0?' disabled':'')+'>↑</button><button class="mvbtn" onclick="mvEx('+ei+',1)"'+(ei===day.exercises.length-1?' disabled':'')+'>↓</button><button class="debtn" onclick="delEx('+ei+')">Remove</button></div></div><div style="margin-bottom:8px"><div class="lbl">Name</div><input class="inp" value="'+ex.name.replace(/"/g,'&quot;')+'" placeholder="Exercise name" oninput="updEX('+ei+',\'name\',this.value)"/></div><div class="fr"><div class="fg"><div class="lbl">Sets</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.sets+'" placeholder="3" oninput="updEX('+ei+',\'sets\',parseInt(this.value)||1)" style="text-align:center"/></div><div class="fg"><div class="lbl">Reps</div><input class="inp" value="'+ex.reps.replace(/"/g,'&quot;')+'" placeholder="8-12" oninput="updEX('+ei+',\'reps\',this.value)"/></div><div class="fg"><div class="lbl">Rest(s)</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" value="'+ex.rest+'" placeholder="90" oninput="updEX('+ei+',\'rest\',parseInt(this.value)||0)" style="text-align:center"/></div></div><div><div class="lbl">Notes / Cues</div><textarea class="inp" rows="2" placeholder="Form cues, pairing info..." oninput="updEX('+ei+',\'note\',this.value)">'+(ex.note||'')+'</textarea></div></div>').join('');
   h+='<button class="aebtn" onclick="addEx()">+ Add Exercise</button>';
   document.getElementById('peditor').innerHTML=h;
 }
 function updEX(ei,field,val){const p=getProg();p[apd].exercises[ei][field]=val;setProg(p);}
+function mvEx(ei,dir){const p=getProg();if(!p[apd])return;const exs=p[apd].exercises,ni=ei+dir;if(ni<0||ni>=exs.length)return;[exs[ei],exs[ni]]=[exs[ni],exs[ei]];setProg(p);rPE();}
 function delEx(ei){if(!confirm('Remove this exercise?'))return;const p=getProg();p[apd].exercises.splice(ei,1);setProg(p);rPE();toast('Exercise removed');}
 function addEx(){const p=getProg();if(!p[apd])p[apd]={name:DL[apd],exercises:[]};p[apd].exercises.push({id:uid(),name:'New Exercise',sets:3,reps:'8-12',rest:90,note:''});setProg(p);rPE();setTimeout(()=>document.getElementById('peditor').lastElementChild?.scrollIntoView({behavior:'smooth'}),100);toast('Exercise added');}
 function resetProg(){if(!confirm('Reset to default program? All logged data is kept.'))return;setProg(JSON.parse(JSON.stringify(DEFAULT_PROGRAM)));rPE();toast('Reset to defaults');}
@@ -479,7 +497,7 @@ function genSum(){
 }
 function copySum(){const t=document.getElementById('sumtxt').value;navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById('cpbtn');b.textContent='Copied!';b.style.color='var(--green)';setTimeout(()=>{b.textContent='Copy';b.style.color='';},2500);}).catch(()=>{document.getElementById('sumtxt').select();document.execCommand('copy');});}
 
-function init(){getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();}
+function init(){getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();window.addEventListener('beforeunload',()=>{if(woNotif)woNotif.close();});}
 init();
 </script>
 </body>
