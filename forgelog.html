@@ -4,6 +4,8 @@
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
 <meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+<meta http-equiv="Pragma" content="no-cache"/>
 <title>ForgeLog</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
 <style>
@@ -126,7 +128,10 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
       </svg>
       <div style="font-family:'Bebas Neue',cursive;font-size:26px;letter-spacing:3px;line-height:1"><span style="color:#FF5C00">FORGE</span><span style="color:#f0f0f0">LOG</span></div>
     </div>
-    <div id="tbadge" style="font-family:var(--mono);font-size:10px;color:var(--text3)"></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div id="tbadge" style="font-family:var(--mono);font-size:10px;color:var(--text3)"></div>
+      <button onclick="location.reload(true)" style="background:none;border:none;color:var(--text3);font-size:14px;padding:0;line-height:1">↺</button>
+    </div>
   </div>
   <div id="nav">
     <button class="nb on" onclick="sw('train')">Train</button>
@@ -225,6 +230,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <div id="toast"></div>
 
 <script>
+const VERSION='1.0';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -497,7 +503,10 @@ function genSum(){
 }
 function copySum(){const t=document.getElementById('sumtxt').value;navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById('cpbtn');b.textContent='Copied!';b.style.color='var(--green)';setTimeout(()=>{b.textContent='Copy';b.style.color='';},2500);}).catch(()=>{document.getElementById('sumtxt').select();document.execCommand('copy');});}
 
-function init(){getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();window.addEventListener('beforeunload',()=>{if(woNotif)woNotif.close();});}
+function init(){
+  if(localStorage.getItem('fl:version')!==VERSION){localStorage.setItem('fl:version',VERSION);location.reload(true);return;}
+  getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();window.addEventListener('beforeunload',()=>{if(woNotif)woNotif.close();});
+}
 init();
 </script>
 </body>
