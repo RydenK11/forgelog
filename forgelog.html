@@ -112,6 +112,15 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 .debtn{background:rgba(239,68,68,.1);border:.5px solid rgba(239,68,68,.3);color:var(--red);border-radius:var(--rsm);padding:5px 10px;font-size:11px;}
 .mvbtn{background:var(--bg3);border:.5px solid var(--border2);color:var(--text2);border-radius:var(--rsm);padding:5px 8px;font-size:11px;}
 .mvbtn:disabled{opacity:.3;cursor:default;}
+/* TOGGLE */
+.tglwrap{display:flex;justify-content:space-between;align-items:center;padding:13px 0;border-bottom:.5px solid var(--border);}
+.tglwrap:last-of-type{border-bottom:none;}
+.tgl{position:relative;width:44px;height:24px;flex-shrink:0;}
+.tgl input{opacity:0;width:0;height:0;position:absolute;}
+.tglslider{position:absolute;inset:0;background:var(--bg3);border:.5px solid var(--border2);border-radius:12px;transition:.2s;cursor:pointer;}
+.tglslider::before{content:'';position:absolute;width:18px;height:18px;left:3px;top:2px;background:var(--text3);border-radius:50%;transition:.2s;}
+.tgl input:checked+.tglslider{background:var(--acc-dim);border-color:var(--acc);}
+.tgl input:checked+.tglslider::before{transform:translateX(20px);background:var(--acc);}
 .aebtn{width:100%;background:transparent;border:.5px dashed var(--border2);border-radius:var(--rsm);padding:10px;font-size:12px;color:var(--text3);margin-top:4px;}
 /* TOAST */
 #toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--bg2);border:.5px solid var(--border2);border-radius:var(--r);padding:10px 20px;font-size:13px;color:var(--text);opacity:0;transition:all .25s;z-index:999;pointer-events:none;white-space:nowrap;}
@@ -139,6 +148,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
     <button class="nb" onclick="sw('measure')">Measure</button>
     <button class="nb" onclick="sw('program')">Program</button>
     <button class="nb" onclick="sw('summary')">Summary</button>
+    <button class="nb" onclick="sw('settings')">Settings</button>
   </div>
   <div id="tbar">
     <div id="tdis">0:00</div>
@@ -225,12 +235,31 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
         <textarea class="inp" id="sumtxt" rows="24" readonly></textarea>
       </div>
     </div>
+    <div class="tab" id="tab-settings">
+      <div class="card">
+        <div style="font-family:var(--display);font-size:22px;letter-spacing:2px;margin-bottom:4px">Notifications</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Both are off by default. Enable below.</div>
+        <div class="tglwrap">
+          <div><div style="font-size:13px;font-weight:600">Timer Notifications</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Alert when rest timer hits zero</div></div>
+          <label class="tgl"><input type="checkbox" id="notif-timer" onchange="togNotif('fl:notif:timer',this.checked)"/><span class="tglslider"></span></label>
+        </div>
+        <div class="tglwrap">
+          <div><div style="font-size:13px;font-weight:600">Workout Reminder</div><div style="font-size:11px;color:var(--text3);margin-top:3px">Persistent alert while workout is active</div></div>
+          <label class="tgl"><input type="checkbox" id="notif-workout" onchange="togNotif('fl:notif:workout',this.checked)"/><span class="tglslider"></span></label>
+        </div>
+        <div style="margin-top:14px;padding-top:14px;border-top:.5px solid var(--border)">
+          <div id="notif-req-wrap"></div>
+          <div id="notif-status" style="font-size:12px;color:var(--text3);margin-bottom:10px"></div>
+          <button class="bgh bsm" onclick="testNotif()" style="width:100%">Test Notification</button>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 <div id="toast"></div>
 
 <script>
-const VERSION='1.0';
+const VERSION='1.1';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -282,7 +311,7 @@ const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DK=[1,2,3,4,5,6,0];const DL={0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
 
-let cdate=tstr(),tiv=null,tsec=0,ttot=0,timerEnd=0,eset=null,apd=1,openSN=new Set(),woNotif=null;
+let cdate=tstr(),tiv=null,tsec=0,ttot=0,timerEnd=0,eset=null,apd=1,openSN=new Set(),activeNotif=null;
 
 function tstr(){return new Date().toISOString().split('T')[0];}
 function pd(s){return new Date(s+'T12:00:00');}
@@ -330,7 +359,7 @@ function startTimer(s){
   tiv=setInterval(()=>{
     const sl=Math.max(0,Math.round((timerEnd-Date.now())/1000));
     updTimer();
-    if(sl<=0){clearInterval(tiv);tiv=null;beep();if('Notification' in window&&Notification.permission==='granted')new Notification('Rest Over',{body:'Time to go!'});setTimeout(()=>document.getElementById('tbar').classList.remove('on'),2500);}
+    if(sl<=0){clearInterval(tiv);tiv=null;beep();if('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem('fl:notif:timer')==='true')new Notification('Rest Over',{body:'Time to hit your next set.',silent:false});setTimeout(()=>document.getElementById('tbar').classList.remove('on'),2500);}
   },200);
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',parseInt(b.dataset.s)===s));
 }
@@ -341,11 +370,12 @@ function sw(name){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
   document.querySelectorAll('.nb').forEach(b=>b.classList.remove('on'));
   document.getElementById('tab-'+name).classList.add('on');
-  ['train','eat','measure','program','summary'].forEach((n,i)=>{if(n===name)document.querySelectorAll('.nb')[i].classList.add('on');});
+  ['train','eat','measure','program','summary','settings'].forEach((n,i)=>{if(n===name)document.querySelectorAll('.nb')[i].classList.add('on');});
   if(name==='train')rTrain();
   if(name==='eat')rEat();
   if(name==='measure')rMeasure();
   if(name==='program')rProg();
+  if(name==='settings')rSettings();
 }
 
 function chDate(d){cdate=addD(cdate,d);updDates();const at=document.querySelector('.tab.on').id.replace('tab-','');sw(at);}
@@ -367,7 +397,7 @@ function rTrain(){
   h+='<div class="card" style="margin-top:4px"><div class="lbl" style="margin-bottom:4px">Workout Note</div><textarea class="inp" rows="2" placeholder="Overall session notes..." oninput="updWONote(this.value)">'+(wo.note?(wo.note+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</textarea></div>';
   body.innerHTML=h;
   document.querySelectorAll('.tq button').forEach(b=>b.classList.toggle('on',tiv&&parseInt(b.dataset.s)===ttot));
-  if(wo){const allDone=wo.exs.every(ex=>ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r)));if(allDone&&woNotif){woNotif.close();woNotif=null;}}
+  if(wo){const allDone=wo.exs.every(ex=>ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r)));if(allDone&&activeNotif){activeNotif.close();activeNotif=null;}}
 }
 
 function prevSets(ei){
@@ -395,10 +425,9 @@ function startWO(){
   const pg=getProg()[dow(cdate)];if(!pg)return;
   const wo={prog:pg.name,started:new Date().toISOString(),exs:pg.exercises.map(e=>({id:e.id,name:e.name,sets:Array.from({length:e.sets},()=>({w:'',r:'',done:false}))}))};
   setWO(cdate,wo);
-  if('Notification' in window){
-    const fire=()=>{if(woNotif)woNotif.close();woNotif=new Notification('ForgeLog',{body:'Workout in progress — tap to return',requireInteraction:true});};
-    if(Notification.permission==='granted')fire();
-    else if(Notification.permission==='default')Notification.requestPermission().then(p=>{if(p==='granted')fire();});
+  if('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem('fl:notif:workout')==='true'){
+    if(activeNotif)activeNotif.close();
+    activeNotif=new Notification('ForgeLog',{body:'Workout in progress — tap to return',requireInteraction:true});
   }
   rTrain();
 }
@@ -501,11 +530,34 @@ function genSum(){
     document.getElementById('sumtxt').value=t;document.getElementById('sumout').style.display='block';btn.textContent='REGENERATE';btn.disabled=false;
   },300);
 }
+/* SETTINGS */
+function getNotifPref(key){return localStorage.getItem(key)==='true';}
+function togNotif(key,val){localStorage.setItem(key,val?'true':'false');}
+function testNotif(){
+  if(!('Notification' in window)||Notification.permission!=='granted'){toast('Grant permission first');return;}
+  new Notification('ForgeLog Test',{body:'Notifications are working!'});
+}
+function reqNotif(){Notification.requestPermission().then(()=>rSettings());}
+function rSettings(){
+  const nt=document.getElementById('notif-timer'),nw=document.getElementById('notif-workout');
+  if(nt)nt.checked=getNotifPref('fl:notif:timer');
+  if(nw)nw.checked=getNotifPref('fl:notif:workout');
+  const perm='Notification' in window?Notification.permission:'denied';
+  const col=perm==='granted'?'var(--green)':perm==='denied'?'var(--red)':'var(--text3)';
+  const label=perm==='granted'?'Granted':perm==='denied'?'Denied':'Not asked yet';
+  const s=document.getElementById('notif-status');
+  const r=document.getElementById('notif-req-wrap');
+  if(s)s.innerHTML='Permission: <span style="color:'+col+'">'+label+'</span>';
+  if(r)r.innerHTML=perm==='default'?'<button class="bacc bsm" style="width:100%;margin-bottom:10px" onclick="reqNotif()">Enable Notifications</button>':'';
+}
+
 function copySum(){const t=document.getElementById('sumtxt').value;navigator.clipboard.writeText(t).then(()=>{const b=document.getElementById('cpbtn');b.textContent='Copied!';b.style.color='var(--green)';setTimeout(()=>{b.textContent='Copy';b.style.color='';},2500);}).catch(()=>{document.getElementById('sumtxt').select();document.execCommand('copy');});}
 
 function init(){
   if(localStorage.getItem('fl:version')!==VERSION){localStorage.setItem('fl:version',VERSION);location.reload(true);return;}
-  getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();window.addEventListener('beforeunload',()=>{if(woNotif)woNotif.close();});
+  getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();
+  if('Notification' in window&&Notification.permission==='default'&&!localStorage.getItem('fl:notif:asked')){localStorage.setItem('fl:notif:asked','1');setTimeout(()=>toast('Enable notifications in Settings for timer alerts'),800);}
+  window.addEventListener('beforeunload',()=>{if(activeNotif)activeNotif.close();});
 }
 init();
 </script>
