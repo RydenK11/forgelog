@@ -12,8 +12,8 @@ self.addEventListener('message', e => {
       new Promise(resolve => {
         setTimeout(() => {
           if (token !== timerToken) { resolve(); return; }
-          self.registration.showNotification('Rest Over', {
-            body: 'Time to hit your next set.',
+          self.registration.showNotification('ForgeLog', {
+            body: 'Rest over — time to hit your next set.',
             tag: 'rest-timer',
             renotify: true,
             vibrate: [200, 100, 200],

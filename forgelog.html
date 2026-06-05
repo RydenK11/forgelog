@@ -259,7 +259,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <div id="toast"></div>
 
 <script>
-const VERSION='1.4';
+const VERSION='1.5';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -430,7 +430,7 @@ function startWO(){
   setWO(cdate,wo);
   if('Notification' in window&&Notification.permission==='granted'&&localStorage.getItem('fl:notif:workout')==='true'){
     if(activeNotif)activeNotif.close();
-    activeNotif=new Notification('Workout Active',{body:'Tap to return to ForgeLog',requireInteraction:true});
+    activeNotif=new Notification('ForgeLog',{body:'Workout in progress — tap to return',requireInteraction:true});
   }
   rTrain();
 }
@@ -538,7 +538,7 @@ function getNotifPref(key){return localStorage.getItem(key)==='true';}
 function togNotif(key,val){localStorage.setItem(key,val?'true':'false');}
 function testNotif(){
   if(!('Notification' in window)||Notification.permission!=='granted'){toast('Grant permission first');return;}
-  new Notification('ForgeLog Test',{body:'Notifications are working!'});
+  new Notification('ForgeLog',{body:'Notifications are working!'});
 }
 function reqNotif(){Notification.requestPermission().then(()=>rSettings());}
 function rSettings(){
