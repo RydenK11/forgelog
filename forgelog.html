@@ -219,6 +219,14 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
           <div style="display:flex;align-items:center;gap:10px;margin-bottom:9px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">3</div><span style="font-size:12px;color:var(--text2)">Open a new Claude chat in your ForgeLog project</span></div>
           <div style="display:flex;align-items:center;gap:10px"><div style="width:22px;height:22px;background:var(--acc);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;color:#fff;font-weight:700;flex-shrink:0">4</div><span style="font-size:12px;color:var(--text2)">Type "Weekly check-in" and paste the report</span></div>
         </div>
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <button class="bgh bsm" onclick="chSumWeek(-1)">◀</button>
+          <div style="flex:1;text-align:center;background:var(--bg3);border:.5px solid var(--border2);border-radius:var(--rsm);padding:8px 12px">
+            <div class="lbl" style="margin-bottom:3px">Week</div>
+            <div id="sumwk" style="font-family:var(--mono);font-size:12px;color:var(--text)"></div>
+          </div>
+          <button class="bgh bsm" id="sumwk-next" onclick="chSumWeek(1)">▶</button>
+        </div>
         <div style="margin-bottom:14px">
           <div class="lbl" style="margin-bottom:8px">Weekly Subjective</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px">
@@ -259,7 +267,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <div id="toast"></div>
 
 <script>
-const VERSION='1.5';
+const VERSION='1.6';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -311,7 +319,7 @@ const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DK=[1,2,3,4,5,6,0];const DL={0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
 
-let cdate=tstr(),tiv=null,tsec=0,ttot=0,timerEnd=0,eset=null,apd=1,openSN=new Set(),activeNotif=null,swReg=null;
+let cdate=tstr(),tiv=null,tsec=0,ttot=0,timerEnd=0,eset=null,apd=1,openSN=new Set(),activeNotif=null,swReg=null,sumWeek='';
 
 function tstr(){return new Date().toISOString().split('T')[0];}
 function pd(s){return new Date(s+'T12:00:00');}
@@ -379,6 +387,7 @@ function sw(name){
   if(name==='measure')rMeasure();
   if(name==='program')rProg();
   if(name==='settings')rSettings();
+  if(name==='summary')updSumWeek();
 }
 
 function chDate(d){cdate=addD(cdate,d);updDates();const at=document.querySelector('.tab.on').id.replace('tab-','');sw(at);}
@@ -490,10 +499,13 @@ function addEx(){const p=getProg();if(!p[apd])p[apd]={name:DL[apd],exercises:[]}
 function resetProg(){if(!confirm('Reset to default program? All logged data is kept.'))return;setProg(JSON.parse(JSON.stringify(DEFAULT_PROGRAM)));rPE();toast('Reset to defaults');}
 
 /* SUMMARY */
+function fmtWk(mon){const sun=addD(mon,6);const d1=pd(mon),d2=pd(sun);return MONS[d1.getMonth()]+' '+d1.getDate()+' – '+MONS[d2.getMonth()]+' '+d2.getDate()+', '+d2.getFullYear();}
+function updSumWeek(){const el=document.getElementById('sumwk');if(el)el.textContent=fmtWk(sumWeek);const nx=document.getElementById('sumwk-next');if(nx)nx.disabled=sumWeek>=monOf(tstr());}
+function chSumWeek(dir){sumWeek=addD(sumWeek,dir*7);updSumWeek();document.getElementById('sumout').style.display='none';}
 function genSum(){
   const btn=document.getElementById('genbtn');btn.textContent='GENERATING...';btn.disabled=true;
   setTimeout(()=>{
-    const mn=monOf(cdate),days=[];
+    const mn=sumWeek||monOf(tstr()),days=[];
     for(let i=0;i<7;i++){const d=addD(mn,i);days.push({d,wo:getWO(d),nu:getNU(d),wt:getWT(d),pt:getPosture(d)});}
     const wd=days.filter(d=>d.wo),nd=days.filter(d=>d.nu&&d.nu.cal>0),wtd=days.filter(d=>d.wt!=null),ptd=days.filter(d=>d.pt);
     const pg2=getProg(),plannedDays=[0,1,2,3,4,5,6].filter(k=>pg2[k]&&pg2[k].exercises&&pg2[k].exercises.length).length;
@@ -559,7 +571,7 @@ function copySum(){const t=document.getElementById('sumtxt').value;navigator.cli
 function init(){
   if(localStorage.getItem('fl:version')!==VERSION){localStorage.setItem('fl:version',VERSION);location.reload(true);return;}
   if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').then(r=>{swReg=r;}).catch(()=>{});
-  getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();
+  sumWeek=monOf(tstr());getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();
   if('Notification' in window&&Notification.permission==='default'&&!localStorage.getItem('fl:notif:asked')){localStorage.setItem('fl:notif:asked','1');setTimeout(()=>toast('Enable notifications in Settings for timer alerts'),800);}
   window.addEventListener('beforeunload',()=>{if(activeNotif)activeNotif.close();});
 }
