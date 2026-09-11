@@ -186,8 +186,13 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
     <div class="tab" id="tab-measure">
       <div class="card">
         <div style="display:flex;justify-content:space-between;align-items:flex-end;margin-bottom:14px">
-          <div><div class="lbl">Today's Weight</div><div class="wb" id="wtd">—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span></div></div>
+          <div><div class="lbl" id="wtdlbl2">Today's Weight</div><div class="wb" id="wtd">—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span></div></div>
           <div style="text-align:right"><div class="lbl">7-Day Avg</div><div id="wavg" style="font-family:var(--mono);font-size:22px;color:var(--acc)">—</div><div style="font-size:10px;color:var(--text3)">lbs</div></div>
+        </div>
+        <div class="row" style="margin-bottom:8px">
+          <button class="bgh bsm" onclick="chWtDate(-1)">◀</button>
+          <div id="wtdlbl" style="flex:1;text-align:center;font-family:var(--mono);font-size:12px;color:var(--text3)"></div>
+          <button class="bgh bsm" id="wtdnext" onclick="chWtDate(1)">▶</button>
         </div>
         <div class="row"><input class="inp" id="winp" type="number" inputmode="decimal" step="0.1" placeholder="Enter weight (lbs)" style="flex:1"/><button class="bacc" onclick="logWt()">Log</button></div>
       </div>
@@ -261,13 +266,21 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
           <button class="bgh bsm" onclick="testNotif()" style="width:100%">Test Notification</button>
         </div>
       </div>
+      <div class="card">
+        <div style="font-family:var(--display);font-size:22px;letter-spacing:2px;margin-bottom:4px">Navigation</div>
+        <div style="font-size:12px;color:var(--text3);margin-bottom:14px">Hide tabs you don't use. Train and Settings always visible.</div>
+        <div class="tglwrap"><div><div style="font-size:13px;font-weight:600">Eat</div></div><label class="tgl"><input type="checkbox" id="tabtog-eat" onchange="togTab('eat',this.checked)"/><span class="tglslider"></span></label></div>
+        <div class="tglwrap"><div><div style="font-size:13px;font-weight:600">Measure</div></div><label class="tgl"><input type="checkbox" id="tabtog-measure" onchange="togTab('measure',this.checked)"/><span class="tglslider"></span></label></div>
+        <div class="tglwrap"><div><div style="font-size:13px;font-weight:600">Program</div></div><label class="tgl"><input type="checkbox" id="tabtog-program" onchange="togTab('program',this.checked)"/><span class="tglslider"></span></label></div>
+        <div class="tglwrap" style="border-bottom:none"><div><div style="font-size:13px;font-weight:600">Summary</div></div><label class="tgl"><input type="checkbox" id="tabtog-summary" onchange="togTab('summary',this.checked)"/><span class="tglslider"></span></label></div>
+      </div>
     </div>
   </div>
 </div>
 <div id="toast"></div>
 
 <script>
-const VERSION='1.6';
+const VERSION='1.7';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -319,7 +332,7 @@ const DAYS=['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const MONS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const DK=[1,2,3,4,5,6,0];const DL={0:'Sunday',1:'Monday',2:'Tuesday',3:'Wednesday',4:'Thursday',5:'Friday',6:'Saturday'};
 
-let cdate=tstr(),tiv=null,tsec=0,ttot=0,timerEnd=0,eset=null,apd=1,openSN=new Set(),activeNotif=null,swReg=null,sumWeek='';
+let cdate=tstr(),tiv=null,tsec=0,ttot=0,timerEnd=0,eset=null,apd=1,openSN=new Set(),activeNotif=null,swReg=null,sumWeek='',wtdate='';
 
 function tstr(){return new Date().toISOString().split('T')[0];}
 function pd(s){return new Date(s+'T12:00:00');}
@@ -423,16 +436,19 @@ function rSets(sets,ei,rest){
   return sets.map((s,si)=>{
     const ps=prev&&prev[si]&&prev[si].w&&prev[si].r?prev[si]:null;
     const isE=eset&&eset.ei===ei&&eset.si===si;
-    if(isE){const pw=ps?ps.w:'lbs',pr=ps?ps.r:'reps';return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.w||'')+'" placeholder="'+pw+'" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="numeric" pattern="[0-9]*" value="'+(s.r||'')+'" placeholder="'+pr+'" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';}
+    if(isE){const pw=ps?ps.w:'lbs',pr=ps?ps.r:'reps';return '<div class="serow"><div class="snum">S'+(si+1)+'</div><input class="inp" id="ew" type="number" inputmode="decimal" pattern="[0-9.]*" value="'+(s.w||'')+'" placeholder="'+pw+'" oninput="liveEdit('+ei+','+si+')" style="flex:1;text-align:center;padding:8px 4px"/><span class="sx">x</span><input class="inp" id="er" type="number" inputmode="decimal" pattern="[0-9.]*" value="'+(s.r||'')+'" placeholder="'+pr+'" oninput="liveEdit('+ei+','+si+')" onfocus="autoFillWeight('+ei+','+si+')" style="flex:1;text-align:center;padding:8px 4px"/><button class="cb" onclick="confEdit('+ei+','+si+')">✓</button></div>';}
     const hd=s.done||(s.w&&s.r),skey=ei+'-'+si,shown=!!(s.note)||openSN.has(skey),sntxt=s.note?(s.note+'').replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'';
     const wTxt=s.w?s.w+' lbs':(ps?'~'+ps.w+' lbs':'— lbs');
     const rTxt=s.r?s.r+' reps':(ps?'~'+ps.r+' reps':'— reps');
     const wSty=(!s.w&&ps)?' style="color:var(--text3)"':'';
     const rSty=(!s.r&&ps)?' style="color:var(--text3)"':'';
-    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'"'+wSty+' onclick="openEdit('+ei+','+si+')">'+wTxt+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'"'+rSty+' onclick="openEdit('+ei+','+si+')">'+rTxt+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
+    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'"'+wSty+' onclick="openEdit('+ei+','+si+')">'+wTxt+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'"'+rSty+' onclick="openEdit('+ei+','+si+')">'+rTxt+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button><button class="bico stbtn" onclick="delSet('+ei+','+si+')" title="Delete set" style="color:var(--red);opacity:.55">✕</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
   }).join('');
 }
 
+function liveEdit(ei,si){const wo=getWO(cdate);if(!wo)return;const w=document.getElementById('ew')?.value??'',r=document.getElementById('er')?.value??'';wo.exs[ei].sets[si]={...wo.exs[ei].sets[si],w,r};setWO(cdate,wo);}
+function autoFillWeight(ei,si){const ew=document.getElementById('ew');if(!ew||ew.value)return;const ps=prevSets(ei);if(ps&&ps[si]&&ps[si].w){ew.value=ps[si].w;liveEdit(ei,si);}}
+function delSet(ei,si){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets.splice(si,1);setWO(cdate,wo);rTrain();}
 function startWO(){
   const pg=getProg()[dow(cdate)];if(!pg)return;
   const wo={prog:pg.name,started:new Date().toISOString(),exs:pg.exercises.map(e=>({id:e.id,name:e.name,sets:Array.from({length:e.sets},()=>({w:'',r:'',done:false}))}))};
@@ -463,8 +479,10 @@ function updCal(nu){const e=nu.cal||0,r=TARGETS.cal-e,p=clamp(Math.round(e/TARGE
 function saveNF(k,v){const nu=getNU(cdate);nu[k]=parseFloat(v)||0;setNU(cdate,nu);updCal(nu);}
 
 /* MEASURE */
+function chWtDate(d){wtdate=addD(wtdate,d);updWtDate();}
+function updWtDate(){const nx=document.getElementById('wtdnext');if(nx)nx.disabled=wtdate>=tstr();const lbl=document.getElementById('wtdlbl');if(lbl)lbl.textContent=wtdate===tstr()?'Today':fmt(wtdate);const lbl2=document.getElementById('wtdlbl2');if(lbl2)lbl2.textContent=wtdate===tstr()?"Today's Weight":fmt(wtdate);const tw=getWT(wtdate);document.getElementById('wtd').innerHTML=tw?tw+'<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span>':'—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span>';document.getElementById('winp').value=tw||'';}
 function rMeasure(){
-  const tw=getWT(tstr());document.getElementById('wtd').innerHTML=tw?tw+'<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span>':'—<span style="font-size:16px;color:var(--text3);margin-left:4px">lbs</span>';document.getElementById('winp').value='';
+  updWtDate();
   const l7=[];for(let i=6;i>=0;i--){const w=getWT(addD(tstr(),-i));if(w!=null)l7.push(w);}
   document.getElementById('wavg').textContent=l7.length?(l7.reduce((a,b)=>a+b,0)/l7.length).toFixed(1):'—';
   const l14=[];for(let i=13;i>=0;i--){const d=addD(tstr(),-i);l14.push({d,w:getWT(d)});}
@@ -477,7 +495,7 @@ function rMeasure(){
 function loadMF(date){const d=getMS(date)||{};document.getElementById('mfields').innerHTML=MF.map(f=>'<div class="mf"><div class="ml">'+f.l+'</div><input class="inp" type="number" inputmode="numeric" pattern="[0-9]*" step="0.1" value="'+(d[f.k]||'')+'" placeholder="—" style="flex:1" id="mf-'+f.k+'"/><div style="font-size:11px;color:var(--text3)">"</div></div>').join('');const b=document.getElementById('msvbtn');b.className='svbtn us';b.textContent='Save Measurements';}
 function rMH(){const all=allMS(),hc=document.getElementById('mhcard');if(!all.length){hc.style.display='none';return;}hc.style.display='block';document.getElementById('mhist').innerHTML=all.slice(0,5).map(({date,data})=>'<div class="hr" onclick="loadHE(\''+date+'\')"><div class="hrd">'+fmt(date)+'</div><div class="hrv">'+MF.filter(f=>data[f.k]).map(f=>'<div style="font-size:11px;color:var(--text2)">'+f.l+': <strong style="color:var(--text)">'+data[f.k]+'"</strong></div>').join('')+'</div></div>').join('');}
 function loadHE(d){document.getElementById('mdate').value=d;loadMF(d);}
-function logWt(){const v=parseFloat(document.getElementById('winp').value);if(isNaN(v))return;setWT(tstr(),v);rMeasure();toast('Weight logged');}
+function logWt(){const v=parseFloat(document.getElementById('winp').value);if(isNaN(v))return;setWT(wtdate,v);rMeasure();toast('Weight logged'+(wtdate!==tstr()?' for '+fmt(wtdate):''));}
 function saveM(){const d=document.getElementById('mdate').value,data={};MF.forEach(f=>{const v=document.getElementById('mf-'+f.k)?.value;if(v)data[f.k]=parseFloat(v);});setMS(d,data);const b=document.getElementById('msvbtn');b.className='svbtn sv';b.textContent='Saved!';setTimeout(()=>{b.className='svbtn us';b.textContent='Save Measurements';},2500);rMH();toast('Measurements saved');}
 
 /* PROGRAM EDITOR */
@@ -546,6 +564,9 @@ function genSum(){
   },300);
 }
 /* SETTINGS */
+function getTabVis(n){return localStorage.getItem('fl:tab:'+n)!=='false';}
+function togTab(n,val){localStorage.setItem('fl:tab:'+n,val?'true':'false');updTabVis();const cur=document.querySelector('.tab.on')?.id.replace('tab-','');if(cur&&!getTabVis(cur))sw('train');}
+function updTabVis(){['eat','measure','program','summary'].forEach((n,i)=>{const nb=document.querySelectorAll('.nb')[i+1];if(nb)nb.style.display=getTabVis(n)?'':'none';const tog=document.getElementById('tabtog-'+n);if(tog)tog.checked=getTabVis(n);});}
 function getNotifPref(key){return localStorage.getItem(key)==='true';}
 function togNotif(key,val){localStorage.setItem(key,val?'true':'false');}
 function testNotif(){
@@ -554,6 +575,7 @@ function testNotif(){
 }
 function reqNotif(){Notification.requestPermission().then(()=>rSettings());}
 function rSettings(){
+  updTabVis();
   const nt=document.getElementById('notif-timer'),nw=document.getElementById('notif-workout');
   if(nt)nt.checked=getNotifPref('fl:notif:timer');
   if(nw)nw.checked=getNotifPref('fl:notif:workout');
@@ -571,7 +593,7 @@ function copySum(){const t=document.getElementById('sumtxt').value;navigator.cli
 function init(){
   if(localStorage.getItem('fl:version')!==VERSION){localStorage.setItem('fl:version',VERSION);location.reload(true);return;}
   if('serviceWorker' in navigator)navigator.serviceWorker.register('./sw.js').then(r=>{swReg=r;}).catch(()=>{});
-  sumWeek=monOf(tstr());getProg();updDates();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();
+  sumWeek=monOf(tstr());wtdate=tstr();getProg();updDates();updTabVis();document.getElementById('tbadge').textContent=tstr();document.getElementById('mdate').value=tstr();rTrain();
   if('Notification' in window&&Notification.permission==='default'&&!localStorage.getItem('fl:notif:asked')){localStorage.setItem('fl:notif:asked','1');setTimeout(()=>toast('Enable notifications in Settings for timer alerts'),800);}
   window.addEventListener('beforeunload',()=>{if(activeNotif)activeNotif.close();});
 }
