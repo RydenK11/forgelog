@@ -417,7 +417,8 @@ function rTrain(){
   let h=pc+'<div class="card"><div class="lbl" style="margin-bottom:8px">Quick Rest Timer</div><div class="tq">'+[[60,'1m'],[90,'1:30'],[120,'2m'],[180,'3m']].map(([s,l])=>'<button data-s="'+s+'" onclick="startTimer('+s+')">'+l+'</button>').join('')+'</div></div>';
   wo.exs.forEach((ex,ei)=>{
     const pr=pg.exercises[ei]||{},ad=ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r));
-    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0,pr.sets||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="Notes, cues, how it felt..." oninput="updExNote('+ei+',this.value)">'+(ex.note?ex.note.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):'')+'</textarea></div></div>';
+    const pn=prevExNote(ei),pnPh=pn?('Last time: '+pn):'Notes, cues, how it felt...';
+    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0,pr.sets||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="'+pnPh.replace(/&/g,"&amp;").replace(/"/g,"&quot;").replace(/</g,"&lt;").replace(/>/g,"&gt;")+'" oninput="updExNote('+ei+',this.value)">'+(ex.note?ex.note.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):'')+'</textarea></div></div>';
   });
   h+='<div class="card" style="margin-top:4px"><div class="lbl" style="margin-bottom:4px">Workout Note</div><textarea class="inp" rows="2" placeholder="Overall session notes..." oninput="updWONote(this.value)">'+(wo.note?(wo.note+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</textarea></div>';
   body.innerHTML=h;
@@ -425,11 +426,17 @@ function rTrain(){
   if(wo){const allDone=wo.exs.every(ex=>ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r)));if(allDone&&activeNotif){activeNotif.close();activeNotif=null;}}
 }
 
-function prevSets(ei){
+function prevWOs(){
   const d=dow(cdate);
-  const keys=DB.keys('wo:').filter(k=>{const dt=k.slice(3);return dt!==cdate&&dow(dt)===d;}).sort().reverse();
-  for(const k of keys){const wo=DB.get(k);if(wo&&wo.exs&&wo.exs[ei]&&wo.exs[ei].sets&&wo.exs[ei].sets.some(s=>s.w&&s.r))return wo.exs[ei].sets;}
+  return DB.keys('wo:').filter(k=>{const dt=k.slice(3);return dt!==cdate&&dow(dt)===d;}).sort().reverse();
+}
+function prevSets(ei){
+  for(const k of prevWOs()){const wo=DB.get(k);if(wo&&wo.exs&&wo.exs[ei]&&wo.exs[ei].sets&&wo.exs[ei].sets.some(s=>s.w&&s.r))return wo.exs[ei].sets;}
   return null;
+}
+function prevExNote(ei){
+  for(const k of prevWOs()){const wo=DB.get(k);if(wo&&wo.exs&&wo.exs[ei]&&wo.exs[ei].note&&wo.exs[ei].note.trim())return wo.exs[ei].note;}
+  return '';
 }
 function rSets(sets,ei,rest,defSets){
   const prev=prevSets(ei);
