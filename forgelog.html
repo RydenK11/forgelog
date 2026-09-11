@@ -280,7 +280,7 @@ textarea.inp{resize:none;line-height:1.65;font-size:11px;color:var(--text2);}
 <div id="toast"></div>
 
 <script>
-const VERSION='1.7';
+const VERSION='1.8';
 /* ============================================================
    SECTION: TARGETS — Edit via Cowork to update goals
    ============================================================ */
@@ -417,7 +417,7 @@ function rTrain(){
   let h=pc+'<div class="card"><div class="lbl" style="margin-bottom:8px">Quick Rest Timer</div><div class="tq">'+[[60,'1m'],[90,'1:30'],[120,'2m'],[180,'3m']].map(([s,l])=>'<button data-s="'+s+'" onclick="startTimer('+s+')">'+l+'</button>').join('')+'</div></div>';
   wo.exs.forEach((ex,ei)=>{
     const pr=pg.exercises[ei]||{},ad=ex.sets.length>0&&ex.sets.every(s=>s.done||(s.w&&s.r));
-    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="Notes, cues, how it felt..." oninput="updExNote('+ei+',this.value)">'+(ex.note?ex.note.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):'')+'</textarea></div></div>';
+    h+='<div class="exc'+(ad?' dn':'')+'" id="ex-'+ei+'"><div class="row" style="margin-bottom:4px"><div style="flex:1"><div class="exn'+(ad?' dn':'')+'">'+ex.name+'</div><div class="exs">'+(pr.sets||'')+'x'+(pr.reps||'')+'</div></div>'+(ad?'<span style="color:var(--green);font-size:16px">✓</span>':'')+'</div>'+(pr.note?'<div class="exno">'+pr.note+'</div>':'')+'<div id="sets-'+ei+'">'+rSets(ex.sets,ei,pr.rest||0,pr.sets||0)+'</div><button class="asb" onclick="addSet('+ei+')">+ add set</button><div style="margin-top:8px"><div class="lbl" style="margin-bottom:4px">Session Note</div><textarea class="inp" rows="2" placeholder="Notes, cues, how it felt..." oninput="updExNote('+ei+',this.value)">'+(ex.note?ex.note.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"):'')+'</textarea></div></div>';
   });
   h+='<div class="card" style="margin-top:4px"><div class="lbl" style="margin-bottom:4px">Workout Note</div><textarea class="inp" rows="2" placeholder="Overall session notes..." oninput="updWONote(this.value)">'+(wo.note?(wo.note+'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'):'')+'</textarea></div>';
   body.innerHTML=h;
@@ -431,7 +431,7 @@ function prevSets(ei){
   for(const k of keys){const wo=DB.get(k);if(wo&&wo.exs&&wo.exs[ei]&&wo.exs[ei].sets&&wo.exs[ei].sets.some(s=>s.w&&s.r))return wo.exs[ei].sets;}
   return null;
 }
-function rSets(sets,ei,rest){
+function rSets(sets,ei,rest,defSets){
   const prev=prevSets(ei);
   return sets.map((s,si)=>{
     const ps=prev&&prev[si]&&prev[si].w&&prev[si].r?prev[si]:null;
@@ -442,7 +442,7 @@ function rSets(sets,ei,rest){
     const rTxt=s.r?s.r+' reps':(ps?'~'+ps.r+' reps':'— reps');
     const wSty=(!s.w&&ps)?' style="color:var(--text3)"':'';
     const rSty=(!s.r&&ps)?' style="color:var(--text3)"':'';
-    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'"'+wSty+' onclick="openEdit('+ei+','+si+')">'+wTxt+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'"'+rSty+' onclick="openEdit('+ei+','+si+')">'+rTxt+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button><button class="bico stbtn" onclick="delSet('+ei+','+si+')" title="Delete set" style="color:var(--red);opacity:.55">✕</button></div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
+    return '<div class="srow"><div class="snum">S'+(si+1)+'</div><div class="sc'+(s.w?(hd?' dc':' fi'):'')+'"'+wSty+' onclick="openEdit('+ei+','+si+')">'+wTxt+'</div><span class="sx">x</span><div class="sc'+(s.r?(hd?' dc':' fi'):'')+'"'+rSty+' onclick="openEdit('+ei+','+si+')">'+rTxt+'</div><button class="bico schk'+(hd?' on':'')+'" onclick="togDone('+ei+','+si+')">'+(hd?'✓':'○')+'</button>'+(rest>0?'<button class="bico stbtn" onclick="startTimer('+rest+')" title="'+rest+'s rest">⏱</button>':'')+'<button class="bico stbtn'+(shown?' snon':'')+'" onclick="togSetNote('+ei+','+si+')" title="Note">✎</button>'+(si>=(defSets||0)?'<button class="bico stbtn" onclick="delSet('+ei+','+si+')" title="Delete set" style="color:var(--red);opacity:.55">✕</button>':'')+'</div><div class="snwrap" id="sn-'+ei+'-'+si+'" style="display:'+(shown?'block':'none')+'"><input class="inp" type="text" value="'+sntxt+'" placeholder="Set note..." oninput="saveSetNote('+ei+','+si+',this.value)"/></div>';
   }).join('');
 }
 
@@ -459,7 +459,7 @@ function startWO(){
   }
   rTrain();
 }
-function openEdit(ei,si){eset={ei,si};const wo=getWO(cdate),pg=getProg()[dow(cdate)],sd=document.getElementById('sets-'+ei);if(sd&&wo&&pg){sd.innerHTML=rSets(wo.exs[ei].sets,ei,pg.exercises[ei]?.rest||0);document.getElementById('ew')?.focus();}}
+function openEdit(ei,si){eset={ei,si};const wo=getWO(cdate),pg=getProg()[dow(cdate)],sd=document.getElementById('sets-'+ei);if(sd&&wo&&pg){sd.innerHTML=rSets(wo.exs[ei].sets,ei,pg.exercises[ei]?.rest||0,pg.exercises[ei]?.sets||0);document.getElementById('ew')?.focus();}}
 function confEdit(ei,si){const wo=getWO(cdate);if(!wo)return;const w=document.getElementById('ew')?.value||'',r=document.getElementById('er')?.value||'';wo.exs[ei].sets[si]={...wo.exs[ei].sets[si],w,r,done:!!(w&&r)};setWO(cdate,wo);eset=null;rTrain();}
 function togDone(ei,si){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets[si].done=!wo.exs[ei].sets[si].done;setWO(cdate,wo);rTrain();}
 function addSet(ei){const wo=getWO(cdate);if(!wo)return;wo.exs[ei].sets.push({w:'',r:'',done:false});setWO(cdate,wo);rTrain();}
